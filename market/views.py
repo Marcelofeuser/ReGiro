@@ -144,7 +144,10 @@ def propose(request, pk):
 @transaction.atomic
 def deal_detail(request, pk):
     store = current_store(request)
-    deal = get_object_or_404(Deal.objects.filter(Q(buyer=store) | Q(seller=store)), pk=pk)
+    deals = Deal.objects.filter(Q(buyer=store) | Q(seller=store))
+    if request.method == "POST":
+        deals = deals.select_for_update()
+    deal = get_object_or_404(deals, pk=pk)
     seller = deal.seller_id == store.pk
     proposed = deal.status == Deal.Status.PROPOSED
     accepted = deal.status == Deal.Status.ACCEPTED
@@ -155,10 +158,13 @@ def deal_detail(request, pk):
         items = Listing.objects.filter(pk__in=[deal.target_id, deal.offered_id])
         if action == "accept" and seller and proposed:
             available = items.filter(status=Listing.Status.ACTIVE, store__verified=True, store__suspended=False)
-            if available.count() != (2 if deal.offered_id else 1):
+            # Lock both lots in a consistent order before checking availability.
+            available_ids = list(available.order_by("pk").select_for_update(of=("self",))
+                                 .values_list("pk", flat=True))
+            if len(available_ids) != (2 if deal.offered_id else 1):
                 messages.error(request, "Uma das peças está indisponível.")
                 return redirect("deal", pk=pk)
-            available.update(status=Listing.Status.RESERVED)
+            items.filter(pk__in=available_ids).update(status=Listing.Status.RESERVED)
             deal.status = Deal.Status.ACCEPTED
         elif action == "cancel" and proposed:
             deal.status = Deal.Status.CANCELLED

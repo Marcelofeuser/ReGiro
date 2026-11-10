@@ -4,7 +4,7 @@
 
 Peça parada vira oportunidade.
 
-Aplicativo responsivo em português brasileiro com o logotipo ReGiro. O catálogo é público. Lojas aprovadas pelo administrador podem anunciar e negociar. Os dados são persistidos no servidor com Django e SQLite.
+Aplicativo responsivo em português brasileiro com o logotipo ReGiro. O catálogo é público. Lojas aprovadas pelo administrador podem anunciar e negociar. Os dados são persistidos no servidor com Django e PostgreSQL no Neon, ou SQLite no desenvolvimento local.
 
 ## Executar localmente
 
@@ -21,6 +21,21 @@ python manage.py runserver
 ```
 
 Abra [o catálogo local](http://localhost:8000). Cadastre duas lojas e aprove ambas em [Administração → Lojas](http://localhost:8000/admin/market/store/). O catálogo começa vazio. Cada anúncio representa um lote completo, com preço total e quantidade informada.
+
+## Conectar ao Neon
+
+Crie um projeto ReGiro no console do Neon. Em **Connect**, selecione a base e a função do aplicativo e copie a URL PostgreSQL. Guarde a URL como o segredo `DATABASE_URL` no ambiente de execução. Preserve os parâmetros de segurança fornecidos pelo Neon. Para a aplicação, pode usar a URL com pool de conexões. Para as migrações, use a URL direta.
+
+Com a URL direta carregada em `DATABASE_URL`, execute:
+
+```sh
+python manage.py migrate
+python manage.py showmigrations market
+```
+
+Fora do modo local, configure também `REGIRO_SECRET_KEY` e `REGIRO_HOSTS`. As migrações criam o esquema em um banco vazio. Dados existentes no SQLite não são transferidos automaticamente. Execute testes apenas com SQLite local ou um servidor PostgreSQL descartável.
+
+[Guia do Neon para Django](https://neon.com/docs/guides/django)
 
 ## Fluxo disponível
 

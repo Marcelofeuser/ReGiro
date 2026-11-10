@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 
+import dj_database_url
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 DEBUG = os.getenv("REGIRO_DEBUG") == "1"
 SECRET_KEY = os.getenv("REGIRO_SECRET_KEY") or ("local-development-only" if DEBUG else "")
@@ -31,7 +33,22 @@ TEMPLATES = [{
         "django.contrib.messages.context_processors.messages",
     ]},
 }]
-DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": BASE_DIR / "regiro.sqlite3"}}
+database_url = os.getenv("DATABASE_URL")
+if database_url:
+    database = dj_database_url.parse(database_url, conn_health_checks=True)
+    if database["ENGINE"] != "django.db.backends.postgresql":
+        raise RuntimeError("DATABASE_URL deve apontar para um banco PostgreSQL.")
+    database["OPTIONS"].setdefault("sslmode", "require")
+    database["DISABLE_SERVER_SIDE_CURSORS"] = True
+elif DEBUG:
+    database = {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "regiro.sqlite3",
+        "OPTIONS": {"transaction_mode": "IMMEDIATE"},
+    }
+else:
+    raise RuntimeError("Configure DATABASE_URL para executar fora do modo local.")
+DATABASES = {"default": database}
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": f"django.contrib.auth.password_validation.{name}"}
     for name in ("UserAttributeSimilarityValidator", "MinimumLengthValidator",
@@ -48,4 +65,3 @@ LOGIN_REDIRECT_URL = "dashboard"
 LOGOUT_REDIRECT_URL = "catalog"
 SESSION_COOKIE_SECURE = CSRF_COOKIE_SECURE = not DEBUG
 SECURE_SSL_REDIRECT = not DEBUG
-DATABASES["default"]["OPTIONS"] = {"transaction_mode": "IMMEDIATE"}
