@@ -12,6 +12,7 @@ urlpatterns = [
     path("cadastro/", views.register, name="register"),
     path("painel/", views.dashboard, name="dashboard"),
     path("anunciar/", views.publish, name="publish"),
+    path("painel/anuncios/<int:pk>/", views.manage_listing, name="manage_listing"),
     path("pecas/<int:pk>/", views.listing_detail, name="listing"),
     path("pecas/<int:pk>/favorito/", views.favorite, name="favorite"),
     path("pecas/<int:pk>/denunciar/", views.report, name="report"),

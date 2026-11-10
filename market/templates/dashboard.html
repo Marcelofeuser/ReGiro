@@ -1,16 +1,38 @@
 {% extends "base.html" %}
 {% block title %}Minha loja{% endblock %}
-{% block content %}<section><small>PAINEL DA LOJA</small><h2>{{ store.name }}</h2>
-{% if store.verified %}<p class="tag">Loja verificada</p> <a class="button" href="{% url 'publish' %}">Anunciar peça</a>
-{% else %}<p>Seu cadastro aguarda aprovação. Você poderá anunciar e negociar depois da verificação.</p>{% endif %}
-<div class="grid">
-<article><h3>Meus anúncios</h3><ul>{% for item in store.listings.all %}
-<li><a href="{% url 'listing' item.pk %}">{{ item.title }}</a> · {{ item.get_status_display }}</li>
-{% empty %}<li>Nenhum anúncio cadastrado.</li>{% endfor %}</ul></article>
-<article><h3>Negociações</h3><ul>{% for deal in deals %}
-<li><a href="{% url 'deal' deal.pk %}">{{ deal.target.title }}</a> · {% if deal.buyer_id == store.pk %}Enviada{% else %}Recebida{% endif %} · {{ deal.get_status_display }}</li>
-{% empty %}<li>Nenhuma negociação ainda.</li>{% endfor %}</ul></article>
-<article><h3>Peças salvas</h3><ul>{% for item in favorites %}
-<li><a href="{% url 'listing' item.pk %}">{{ item.title }}</a>
-<form method="post" action="{% url 'favorite' item.pk %}">{% csrf_token %}<button class="secondary" name="action" value="remove">Remover</button></form></li>
-{% empty %}<li>Nenhuma peça salva.</li>{% endfor %}</ul></article></div></section>{% endblock %}
+{% block content %}
+<section class="workspace">
+  <div class="workspace-heading">
+    <div><small>PAINEL DA LOJA</small><h1>{{ store.name }}</h1>
+    {% if store.verified %}<span class="tag">Loja verificada</span>
+    {% else %}<span class="tag">Aguardando verificação</span><p>Você poderá anunciar e negociar após a aprovação do cadastro.</p>{% endif %}</div>
+    {% if store.verified %}<a class="button" href="{% url 'publish' %}">+ Anunciar peça</a>{% endif %}
+  </div>
+  <dl class="metrics">{% for label, total in metrics %}<div><dt>{{ label }}</dt><dd>{{ total }}</dd></div>{% endfor %}</dl>
+  <article class="workspace-list">
+    <nav class="workspace-tabs" aria-label="Área da loja">{% for key, label in tabs.items %}
+      <a href="?tab={{ key }}"{% if tab == key %} aria-current="page"{% endif %}>{{ label }}</a>
+    {% endfor %}</nav>
+    <ul class="records">{% for entry in page %}
+      <li>
+      {% if tab == "listings" or tab == "favorites" %}
+        <div><a class="record-title" href="{% url 'listing' entry.pk %}">{{ entry.title }}</a>
+        <p>{{ entry.manufacturer }} · {{ entry.code }} · R$ {{ entry.price }}</p></div>
+        {% if tab == "listings" %}
+          <div class="record-actions"><span class="tag">{{ entry.get_status_display }}</span>
+          {% if store.verified and entry.status == "active" %}<a class="button secondary" href="{% url 'manage_listing' entry.pk %}">Gerenciar</a>{% endif %}</div>
+        {% else %}<form method="post" action="{% url 'favorite' entry.pk %}">{% csrf_token %}<button class="secondary" name="action" value="remove">Remover</button></form>{% endif %}
+      {% else %}
+        <div><a class="record-title" href="{% url 'deal' entry.pk %}">{{ entry.target.title }}</a>
+        <p>{% if tab == "incoming" %}De {{ entry.buyer }}{% else %}Para {{ entry.seller }}{% endif %} · {{ entry.created_at|date:"d/m/Y" }}</p></div>
+        <span class="tag">{{ entry.get_status_display }}</span>
+      {% endif %}
+      </li>
+    {% empty %}<li>Nenhum registro nesta seção.</li>{% endfor %}</ul>
+    {% if page.has_other_pages %}<nav class="pagination" aria-label="Páginas">
+      {% if page.has_previous %}<a href="?tab={{ tab }}&amp;page={{ page.previous_page_number }}">← Anterior</a>{% endif %}
+      {% if page.has_next %}<a href="?tab={{ tab }}&amp;page={{ page.next_page_number }}">Próxima →</a>{% endif %}
+    </nav>{% endif %}
+  </article>
+</section>
+{% endblock %}

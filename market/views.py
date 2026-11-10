@@ -7,7 +7,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
@@ -67,9 +67,50 @@ def current_store(request, verified=False):
 @login_required
 def dashboard(request):
     store = current_store(request)
-    deals = Deal.objects.filter(Q(buyer=store) | Q(seller=store)).select_related("target").order_by("-created_at")
-    favorites = Listing.objects.filter(favorite__store=store, status=Listing.Status.ACTIVE, store__suspended=False)
-    return render(request, "dashboard.html", {"store": store, "deals": deals, "favorites": favorites})
+    listings = store.listings.order_by("-created_at", "-pk")
+    deals = Deal.objects.filter(Q(buyer=store) | Q(seller=store)).select_related(
+        "target", "buyer", "seller"
+    ).order_by("-created_at", "-pk")
+    favorites = Listing.objects.filter(
+        favorite__store=store, status=Listing.Status.ACTIVE, store__suspended=False
+    ).select_related("store").order_by("-created_at", "-pk")
+    counts = {row["status"]: row["total"] for row in
+              listings.order_by().values("status").annotate(total=Count("pk"))}
+    metrics = [(label, counts.get(value, 0)) for value, label in Listing.Status.choices]
+    tab = request.GET.get("tab", "listings")
+    collections = {"listings": listings, "incoming": deals.filter(seller=store),
+                   "outgoing": deals.filter(buyer=store), "favorites": favorites}
+    if tab not in collections:
+        tab = "listings"
+    page = Paginator(collections[tab], 12).get_page(request.GET.get("page"))
+    return render(request, "dashboard.html", {
+        "store": store, "page": page, "tab": tab, "metrics": metrics,
+        "tabs": {"listings": "Meus anúncios", "incoming": "Recebidas",
+                 "outgoing": "Enviadas", "favorites": "Peças salvas"},
+    })
+
+
+@login_required
+def manage_listing(request, pk):
+    store = current_store(request, verified=True)
+    with transaction.atomic():
+        item = get_object_or_404(store.listings.select_for_update(), pk=pk)
+        if item.status != Listing.Status.ACTIVE:
+            raise PermissionDenied
+        if request.method == "POST" and request.POST.get("action") == "close":
+            item.status = Listing.Status.CLOSED
+            item.save(update_fields=["status"])
+            messages.success(request, "Anúncio encerrado e retirado do catálogo.")
+            return redirect("dashboard")
+        has_proposals = item.proposals.exists() or item.offers.exists()
+        form = ListingForm(request.POST if request.method == "POST" else None, instance=item)
+        if request.method == "POST" and has_proposals:
+            raise PermissionDenied("Anúncios com histórico de propostas não podem ser editados.")
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Anúncio atualizado.")
+            return redirect("dashboard")
+    return render(request, "manage_listing.html", {"item": item, "form": form, "has_proposals": has_proposals})
 
 
 @login_required
@@ -129,6 +170,19 @@ def propose(request, pk):
     fees = rates()
     if form.is_valid():
         offered = form.cleaned_data.get("offered")
+        selected = [target] + ([offered] if offered else [])
+        locked = list(Listing.objects.filter(pk__in=[item.pk for item in selected])
+                      .order_by("pk").select_for_update())
+        fields = [field.attname for field in Listing._meta.concrete_fields]
+        original = {item.pk: item for item in selected}
+        changed = len(locked) != len(selected) or any(
+            getattr(item, field) != getattr(original[item.pk], field)
+            for item in locked for field in fields
+        )
+        if changed:
+            form.add_error(None, "Um anúncio mudou. Confira as condições antes de enviar.")
+            return render(request, "form.html", {"title": f"Proposta · {target.title}",
+                                                  "form": form, "proposal_rates": fees})
         amount = form.cleaned_data["amount"]
         fee = fees.swap_fee if offered else (amount * fees.commission / 100).quantize(
             Decimal("0.01"), rounding=ROUND_HALF_UP
