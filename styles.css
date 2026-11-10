@@ -1,0 +1,132 @@
+:root {
+  color-scheme: light;
+  --bg: #f2f6fb;
+  --card: #ffffff;
+  --text: #19324d;
+  --accent: #0b7a75;
+  --accent-dark: #065b58;
+  --warning: #8d4e00;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.2rem 1rem;
+  background: linear-gradient(135deg, #0b7a75, #0f4f6f);
+  color: #fff;
+}
+
+h1 { margin: 0; }
+.subtitle, .slogan { margin: 0.2rem 0; }
+
+.container {
+  width: min(1100px, 96%);
+  margin: 1rem auto 2rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.two-cols {
+  grid-template-columns: 1fr;
+}
+
+.card {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 4px 14px rgba(10, 20, 40, 0.08);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+
+.form-grid.compact {
+  grid-template-columns: 1fr;
+}
+
+input, select, button {
+  width: 100%;
+  padding: 0.6rem;
+  border-radius: 8px;
+  border: 1px solid #c6d4e6;
+  font: inherit;
+}
+
+button {
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--accent-dark);
+}
+
+label {
+  font-size: 0.9rem;
+}
+
+.chip {
+  margin: 0;
+  background: rgba(255,255,255,0.22);
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+}
+
+.hint {
+  color: var(--warning);
+  font-size: 0.92rem;
+}
+
+.msg { font-weight: 600; }
+
+.actions {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0.8rem 0;
+}
+
+.list-item {
+  border: 1px solid #d7e2ef;
+  border-radius: 10px;
+  padding: 0.6rem;
+  margin: 0.5rem 0;
+}
+
+@media (min-width: 900px) {
+  .two-cols {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .form-grid.compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .form-grid button {
+    grid-column: span 2;
+  }
+}

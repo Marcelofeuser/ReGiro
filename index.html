@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ReGiro | Peças automotivas entre lojas</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <div>
+        <h1>ReGiro</h1>
+        <p class="subtitle">Peças automotivas entre lojas</p>
+        <p class="slogan">Peça parada vira oportunidade.</p>
+      </div>
+      <p class="chip">MVP em modo de teste (sem cobrança real)</p>
+    </header>
+
+    <main class="container">
+      <section class="card" id="business-rules">
+        <h2>Regras de negócio (MVP)</h2>
+        <ul>
+          <li>Comissão de venda: <strong id="commissionValue">6%</strong> (configurável no painel admin).</li>
+          <li>Tarifa por troca concluída: <strong id="tradeFeeValue">R$ 10,00</strong>, cobrada uma única vez de quem iniciou a proposta.</li>
+          <li>Clube ReGiro VIP: assinatura mensal opcional com 1 isenção de tarifa de troca por mês + descontos configuráveis.</li>
+          <li>Pagamentos apenas em <strong>modo de teste</strong>. Não armazenamos dados completos de cartão.</li>
+        </ul>
+      </section>
+
+      <section class="grid two-cols">
+        <article class="card">
+          <h2>Cadastro gratuito da loja</h2>
+          <form id="storeForm" class="form-grid">
+            <input name="razaoSocial" placeholder="Razão social" required />
+            <input name="nomeFantasia" placeholder="Nome fantasia" required />
+            <input name="cnpj" placeholder="CNPJ (00.000.000/0000-00)" required />
+            <input name="responsavel" placeholder="Responsável" required />
+            <input name="email" type="email" placeholder="E-mail" required />
+            <input name="telefone" placeholder="Telefone" required />
+            <input name="endereco" placeholder="Endereço" required />
+            <label><input type="checkbox" name="emailVerificado" required /> E-mail verificado</label>
+            <label><input type="checkbox" name="telefoneVerificado" required /> Telefone verificado</label>
+            <button type="submit">Cadastrar loja</button>
+          </form>
+          <p id="storeMessage" class="msg"></p>
+          <div id="storesList"></div>
+        </article>
+
+        <article class="card">
+          <h2>Publicar anúncio</h2>
+          <form id="listingForm" class="form-grid">
+            <input name="titulo" placeholder="Título" required />
+            <input name="descricao" placeholder="Descrição" required />
+            <input name="categoria" placeholder="Categoria" required />
+            <input name="fabricante" placeholder="Fabricante" required />
+            <input name="codigoPeca" placeholder="Código da peça" required />
+            <input name="codigoOem" placeholder="Código OEM / Referência" />
+            <input name="aplicacao" placeholder="Veículo (marca, modelo, ano, motor, versão)" />
+            <select name="condicao" required>
+              <option value="">Condição</option>
+              <option>Nova lacrada</option>
+              <option>Nova sem embalagem</option>
+              <option>Usada revisada</option>
+              <option>Usada no estado</option>
+            </select>
+            <input name="quantidade" type="number" min="1" placeholder="Quantidade" required />
+            <input name="preco" type="number" min="0" step="0.01" placeholder="Preço (R$)" required />
+            <input name="localizacao" placeholder="Localização" required />
+            <input name="distanciaKm" type="number" min="0" step="0.1" placeholder="Distância estimada (km)" required />
+            <input name="fotos" placeholder="Fotos reais (URLs separadas por vírgula)" required />
+            <input name="entrega" placeholder="Entrega/retirada" required />
+            <input name="notaFiscal" placeholder="Nota fiscal" required />
+            <input name="garantia" placeholder="Garantia" required />
+            <input name="procedencia" placeholder="Procedência" required />
+            <select name="motivo">
+              <option value="">Motivo opcional</option>
+              <option>Estoque parado</option>
+              <option>Curva D/E</option>
+              <option>Compra equivocada</option>
+              <option>Outro</option>
+            </select>
+            <label><input type="checkbox" name="vendaDireta" checked /> Venda direta</label>
+            <label><input type="checkbox" name="aceitaOferta" checked /> Aceita oferta</label>
+            <label><input type="checkbox" name="aceitaTroca" checked /> Aceita troca</label>
+            <button type="submit">Publicar anúncio</button>
+          </form>
+          <p class="hint">Anúncios com origem roubada/falsificada/enganosa são proibidos e podem ser denunciados.</p>
+          <p id="listingMessage" class="msg"></p>
+        </article>
+      </section>
+
+      <section class="card">
+        <h2>Pesquisa pública</h2>
+        <form id="searchForm" class="form-grid">
+          <input name="q" placeholder="Buscar por nome, código, fabricante, aplicação" />
+          <input name="categoria" placeholder="Categoria" />
+          <input name="localizacao" placeholder="Localização" />
+          <select name="condicao"><option value="">Condição</option><option>Nova lacrada</option><option>Nova sem embalagem</option><option>Usada revisada</option><option>Usada no estado</option></select>
+          <input name="precoMax" type="number" min="0" step="0.01" placeholder="Preço máximo" />
+          <input name="distanciaMax" type="number" min="0" step="0.1" placeholder="Distância máxima (km)" />
+          <select name="negociacao"><option value="">Tipo de negociação</option><option value="venda">Venda</option><option value="troca">Troca</option></select>
+          <select name="ordem">
+            <option value="relevancia">Relevância</option>
+            <option value="preco">Preço</option>
+            <option value="data">Data de publicação</option>
+            <option value="distancia">Distância</option>
+          </select>
+          <button type="submit">Buscar</button>
+        </form>
+        <form id="saveListingForm" class="form-grid compact">
+          <input name="storeId" type="number" placeholder="ID da loja para salvar anúncio" required />
+          <input name="listingId" type="number" placeholder="ID do anúncio" required />
+          <button type="submit">Salvar anúncio</button>
+        </form>
+        <div id="savedListings"></div>
+        <div id="listings"></div>
+      </section>
+
+      <section class="grid two-cols">
+        <article class="card">
+          <h2>Negociação, chat e troca</h2>
+          <form id="negotiationForm" class="form-grid">
+            <input name="storeId" type="number" placeholder="ID da loja que iniciou" required />
+            <input name="listingId" type="number" placeholder="ID do anúncio alvo" required />
+            <input name="ownListingId" type="number" placeholder="ID de anúncio próprio para troca" />
+            <input name="offerValue" type="number" min="0" step="0.01" placeholder="Oferta em R$" />
+            <input name="cashDifference" type="number" step="0.01" placeholder="Diferença em dinheiro (troca)" />
+            <select name="type" required>
+              <option value="sale">Oferta de compra</option>
+              <option value="trade">Proposta de troca</option>
+            </select>
+            <button type="submit">Enviar proposta</button>
+          </form>
+          <p id="negotiationPreview" class="hint"></p>
+
+          <div class="actions">
+            <button id="acceptByStarter" type="button">Aceite loja iniciadora</button>
+            <button id="acceptByReceiver" type="button">Aceite outra loja</button>
+            <button id="confirmReceipt" type="button">Confirmar recebimento (duas lojas)</button>
+          </div>
+
+          <div id="negotiations"></div>
+
+          <h3>Chat interno do anúncio</h3>
+          <form id="chatForm" class="form-grid compact">
+            <input name="listingId" type="number" placeholder="ID anúncio" required />
+            <input name="sender" placeholder="Loja remetente" required />
+            <input name="message" placeholder="Mensagem" required />
+            <button type="submit">Enviar</button>
+          </form>
+          <div id="chatLog"></div>
+        </article>
+
+        <article class="card">
+          <h2>Clube ReGiro VIP</h2>
+          <p id="vipRules"></p>
+          <form id="vipForm" class="form-grid compact">
+            <input name="storeId" type="number" placeholder="ID da loja" required />
+            <button type="submit">Assinar / renovar 30 dias (teste)</button>
+          </form>
+          <div id="vipStatus"></div>
+
+          <h3>Alertas de peças procuradas</h3>
+          <form id="alertForm" class="form-grid compact">
+            <input name="storeId" type="number" placeholder="ID da loja" required />
+            <input name="alert" placeholder="Código da peça ou veículo" required />
+            <button type="submit">Criar alerta</button>
+          </form>
+          <div id="alertsList"></div>
+        </article>
+      </section>
+
+      <section class="grid two-cols">
+        <article class="card">
+          <h2>Painel da Loja</h2>
+          <form id="dashboardForm" class="form-grid compact">
+            <input name="storeId" type="number" placeholder="ID da loja" required />
+            <button type="submit">Ver painel</button>
+          </form>
+          <div id="storeDashboard"></div>
+        </article>
+
+        <article class="card">
+          <h2>Painel Administrativo</h2>
+          <form id="adminConfigForm" class="form-grid compact">
+            <input name="commission" type="number" min="0" step="0.1" placeholder="Comissão de venda (%)" required />
+            <input name="tradeFee" type="number" min="0" step="0.01" placeholder="Tarifa troca (R$)" required />
+            <input name="vipPrice" type="number" min="0" step="0.01" placeholder="Preço VIP mensal (R$)" required />
+            <input name="vipTradeDiscount" type="number" min="0" step="0.1" placeholder="Desconto VIP em trocas adicionais (%)" required />
+            <input name="vipTrialDays" type="number" min="0" placeholder="Teste VIP (dias)" required />
+            <input name="vipCoupon" placeholder="Cupom promocional" />
+            <button type="submit">Salvar configurações</button>
+          </form>
+
+          <form id="verifyStoreForm" class="form-grid compact">
+            <input name="storeId" type="number" placeholder="ID da loja" required />
+            <select name="status" required>
+              <option value="verified">Verificar loja</option>
+              <option value="suspended">Suspender loja</option>
+              <option value="blocked">Bloquear loja</option>
+            </select>
+            <button type="submit">Atualizar loja</button>
+          </form>
+
+          <p id="adminMessage" class="msg"></p>
+          <div id="adminSummary"></div>
+        </article>
+      </section>
+
+      <section class="card">
+        <h2>Pagamentos (modo de teste)</h2>
+        <p>
+          Integração preparada para marketplace com split. Antes de concluir venda, exibimos: preço,
+          tarifas do provedor, comissão ReGiro e líquido estimado. As confirmações finais devem vir por
+          notificações seguras do provedor (webhooks assinados).
+        </p>
+        <p class="hint">
+          Para produção: configure credenciais reais no servidor e ative cobranças somente após validação.
+        </p>
+      </section>
+
+      <section class="card">
+        <h2>Confiabilidade e conformidade</h2>
+        <ul>
+          <li>Denúncias de anúncios e lojas devem ser analisadas pelo administrador.</li>
+          <li>Cancelamento e disputa podem ser abertos conforme regras publicadas.</li>
+          <li>Cada loja deve acessar somente seus dados, anúncios e conversas.</li>
+          <li>Política de privacidade e termos de uso devem ser apresentados antes do uso produtivo.</li>
+        </ul>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
