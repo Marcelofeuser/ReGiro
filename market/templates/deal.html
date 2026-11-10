@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Negociação {{ deal.pk }}{% endblock %}
+{% block content %}<section><article class="panel"><span class="tag">{{ deal.get_status_display }}</span><h2>{{ deal.target.title }}</h2>
+<p>{{ deal.buyer }} → {{ deal.seller }}</p>
+{% if deal.offered %}<p>Peça oferecida em troca: {{ deal.offered.title }}.</p><p>Diferença: R$ {{ deal.amount }}. Tarifa da loja proponente: R$ {{ deal.fee }}.</p>
+{% else %}<p>Valor: R$ {{ deal.amount }}. Comissão da loja vendedora: R$ {{ deal.fee }}. Líquido estimado antes de eventuais tarifas do provedor: R$ {{ net }}.</p>{% endif %}
+<p>Valores informativos. Nenhuma cobrança é processada neste ambiente.</p>
+{% if proposed or accepted %}<form class="actions" method="post">{% csrf_token %}
+{% if proposed %}{% if seller %}<button name="action" value="accept">Aceitar proposta</button>{% endif %}<button class="secondary" name="action" value="cancel">Cancelar proposta</button>{% endif %}
+{% if accepted %}<button name="action" value="received">Confirmar recebimento ou entrega</button><button class="secondary" name="action" value="dispute">Abrir disputa</button>{% endif %}</form>{% endif %}
+{% if accepted %}<p>Confirmações: proponente {{ deal.buyer_received|yesno:"sim,não" }} · vendedora {{ deal.seller_received|yesno:"sim,não" }}.</p>{% endif %}
+<h3>Conversa</h3><ul class="conversation">{% for entry in deal.messages.all %}<li><strong>{{ entry.sender }}</strong> <small>{{ entry.created_at|date:"d/m H:i" }}</small><p>{{ entry.body|linebreaksbr }}</p></li>{% empty %}<li>Nenhuma mensagem ainda.</li>{% endfor %}</ul>
+{% if chat_open %}<form method="post">{% csrf_token %}{{ form.as_p }}<button name="action" value="message">Enviar mensagem</button></form>{% endif %}
+</article></section>{% endblock %}

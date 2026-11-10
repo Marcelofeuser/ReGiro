@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{{ item.title }}{% endblock %}
+{% block content %}<section><article class="panel">
+<span class="tag">{{ item.get_mode_display }} · {{ item.get_status_display }}</span><h2>{{ item.title }}</h2>
+<p>{{ item.store }} · {{ item.city }} {% if item.store.verified %}· Loja verificada{% endif %}</p>
+<strong class="price">R$ {{ item.price }}</strong><p>{{ item.description|linebreaksbr }}</p>
+<dl><dt>Categoria</dt><dd>{{ item.category }}</dd><dt>Fabricante e código</dt><dd>{{ item.manufacturer }} · {{ item.code }}</dd>
+{% if item.oem %}<dt>OEM</dt><dd>{{ item.oem }}</dd>{% endif %}
+{% if item.vehicle %}<dt>Compatibilidade informada</dt><dd>{{ item.vehicle }}</dd>{% endif %}
+<dt>Condição e quantidade</dt><dd>{{ item.condition }} · {{ item.quantity }} un.</dd>
+<dt>Entrega</dt><dd>{{ item.delivery }}</dd><dt>Nota fiscal, garantia e procedência</dt><dd>{{ item.provenance }}</dd>
+{% if item.reason %}<dt>Motivo do anúncio</dt><dd>{{ item.reason }}</dd>{% endif %}</dl>
+{% if active and store != item.store %}<div class="actions">
+{% if store and not store.suspended %}
+<form method="post" action="{% url 'favorite' item.pk %}">{% csrf_token %}<button class="secondary">Salvar peça</button></form>
+<a href="{% url 'report' item.pk %}">Denunciar anúncio</a>
+{% if store.verified %}<a class="button" href="{% url 'propose' item.pk %}">Iniciar negociação</a>{% endif %}
+{% elif not user.is_authenticated %}<a class="button" href="{% url 'login' %}?next={{ request.path }}">Entrar para negociar</a>{% endif %}
+</div>{% endif %}</article></section>{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero"><small>MARKETPLACE ENTRE LOJAS DE AUTOPEÇAS</small><h1>Peça parada vira<br><em>oportunidade.</em></h1>
+<p>Encontre peças para sua loja e coloque seu estoque de volta em circulação.</p>
+<a class="button" href="#catalogo">Explorar catálogo ↓</a></section>
+<section id="catalogo"><small>ESTOQUE EM CIRCULAÇÃO</small><h2>Encontre a peça certa</h2>
+<form class="filters">{% for field in filters %}<label>{{ field.label }}{{ field }}{{ field.errors }}</label>{% endfor %}
+<button>Buscar</button></form>
+<p>{{ page.paginator.count }} peça{{ page.paginator.count|pluralize }} no catálogo</p>
+<div class="grid">{% for item in page %}
+<article><span class="tag">{{ item.get_mode_display }}</span><h3>{{ item.title }}</h3>
+<p>{{ item.manufacturer }} · {{ item.code }}<br>{{ item.condition }} · {{ item.city }}</p>
+<p>{{ item.store }} {% if item.store.verified %}· Loja verificada{% endif %}</p>
+<strong class="price">R$ {{ item.price }}</strong><a class="button" href="{% url 'listing' item.pk %}">Ver detalhes</a></article>
+{% empty %}<article><h3>Nenhuma peça encontrada</h3><p>Confira os filtros ou volte quando houver novos anúncios.</p></article>{% endfor %}</div>
+<nav class="pagination" aria-label="Páginas">{% if page.has_previous %}<a href="{% querystring page=page.previous_page_number %}">← Anterior</a>{% endif %}
+{% if page.has_next %}<a href="{% querystring page=page.next_page_number %}">Próxima →</a>{% endif %}</nav></section>
+{% endblock %}

@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+{% block title %}Entrar{% endblock %}
+{% block content %}<section><article class="panel"><h2>Entre na sua conta</h2>
+<form method="post">{% csrf_token %}{{ form.as_p }}<input type="hidden" name="next" value="{{ next }}"><button>Entrar</button></form>
+<p><a href="{% url 'register' %}">Cadastrar minha loja</a></p></article></section>{% endblock %}

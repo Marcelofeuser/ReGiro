@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Minha loja{% endblock %}
+{% block content %}<section><small>PAINEL DA LOJA</small><h2>{{ store.name }}</h2>
+{% if store.verified %}<p class="tag">Loja verificada</p> <a class="button" href="{% url 'publish' %}">Anunciar peça</a>
+{% else %}<p>Seu cadastro aguarda aprovação. Você poderá anunciar e negociar depois da verificação.</p>{% endif %}
+<div class="grid">
+<article><h3>Meus anúncios</h3><ul>{% for item in store.listings.all %}
+<li><a href="{% url 'listing' item.pk %}">{{ item.title }}</a> · {{ item.get_status_display }}</li>
+{% empty %}<li>Nenhum anúncio cadastrado.</li>{% endfor %}</ul></article>
+<article><h3>Negociações</h3><ul>{% for deal in deals %}
+<li><a href="{% url 'deal' deal.pk %}">{{ deal.target.title }}</a> · {% if deal.buyer_id == store.pk %}Enviada{% else %}Recebida{% endif %} · {{ deal.get_status_display }}</li>
+{% empty %}<li>Nenhuma negociação ainda.</li>{% endfor %}</ul></article>
+<article><h3>Peças salvas</h3><ul>{% for item in favorites %}
+<li><a href="{% url 'listing' item.pk %}">{{ item.title }}</a>
+<form method="post" action="{% url 'favorite' item.pk %}">{% csrf_token %}<button class="secondary" name="action" value="remove">Remover</button></form></li>
+{% empty %}<li>Nenhuma peça salva.</li>{% endfor %}</ul></article></div></section>{% endblock %}

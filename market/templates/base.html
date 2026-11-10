@@ -1,0 +1,14 @@
+{% load static %}<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}Peças automotivas entre lojas{% endblock %} | ReGiro</title>
+<link rel="stylesheet" href="{% static 'style.css' %}"></head>
+<body><header><a href="{% url 'catalog' %}"><img src="{% static 'regiro.png' %}" alt="ReGiro — Peça parada vira oportunidade"></a>
+<nav aria-label="Menu principal"><a href="{% url 'catalog' %}">Catálogo</a><a href="{% url 'vip' %}">Clube VIP</a>
+{% if user.is_staff %}<a href="{% url 'admin:index' %}">Administração</a>{% endif %}
+{% if user.is_authenticated %}{% if user.store %}<a href="{% url 'dashboard' %}">Minha loja</a>{% endif %}
+<form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="secondary">Sair</button></form>
+{% else %}<a href="{% url 'login' %}">Entrar</a><a class="button" href="{% url 'register' %}">Cadastrar loja</a>{% endif %}</nav></header>
+<main>{% if messages %}<section aria-label="Avisos">{% for message in messages %}<p role="status">{{ message }}</p>{% endfor %}</section>{% endif %}
+{% block content %}{% endblock %}</main><footer>ReGiro · Peças automotivas entre lojas · Ambiente de validação</footer>
+</body></html>

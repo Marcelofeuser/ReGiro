@@ -1,0 +1,191 @@
+from decimal import Decimal, ROUND_HALF_UP
+
+from django.contrib import messages
+from django.contrib.auth import login
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import UserCreationForm
+from django.core.exceptions import PermissionDenied
+from django.core.paginator import Paginator
+from django.db import transaction
+from django.db.models import Q
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
+
+from .forms import CatalogFilters, ListingForm, ProposalForm, StoreForm, TextForm
+from .models import Deal, Favorite, Listing, Message, Rates, Report, Store
+
+
+def rates():
+    return Rates.objects.filter(pk=1).first() or Rates(pk=1)
+
+
+def catalog(request):
+    results = Listing.objects.filter(status=Listing.Status.ACTIVE, store__suspended=False).select_related("store")
+    filters = CatalogFilters(request.GET)
+    filters.is_valid()
+    query = filters.cleaned_data.get("q", "")
+    for term in query.split():
+        results = results.filter(
+            Q(title__icontains=term) | Q(manufacturer__icontains=term) |
+            Q(code__icontains=term) | Q(oem__icontains=term) | Q(vehicle__icontains=term) |
+            Q(category__icontains=term) | Q(city__icontains=term)
+        )
+    mode = filters.cleaned_data.get("mode")
+    condition = filters.cleaned_data.get("condition")
+    max_price = filters.cleaned_data.get("max_price")
+    if mode:
+        results = results.filter(mode=mode)
+    if condition:
+        results = results.filter(condition=condition)
+    if max_price is not None:
+        results = results.filter(price__lte=max_price)
+    order = filters.cleaned_data.get("order")
+    results = results.order_by({"low": "price", "high": "-price"}.get(order, "-created_at"), "-pk")
+    page = Paginator(results, 24).get_page(request.GET.get("page"))
+    return render(request, "catalog.html", {"page": page, "filters": filters})
+
+
+@transaction.atomic
+def register(request):
+    account = UserCreationForm(request.POST if request.method == "POST" else None)
+    profile = StoreForm(request.POST if request.method == "POST" else None)
+    if request.method == "POST" and all([account.is_valid(), profile.is_valid()]):
+        user = account.save()
+        Store.objects.create(user=user, **profile.cleaned_data)
+        login(request, user)
+        return redirect("dashboard")
+    return render(request, "form.html", {"title": "Cadastre sua loja", "form": account, "extra": profile})
+
+
+def current_store(request, verified=False):
+    store = getattr(request.user, "store", None)
+    if not store or store.suspended or (verified and not store.verified):
+        raise PermissionDenied("Esta ação requer uma loja aprovada e ativa.")
+    return store
+
+
+@login_required
+def dashboard(request):
+    store = current_store(request)
+    deals = Deal.objects.filter(Q(buyer=store) | Q(seller=store)).select_related("target").order_by("-created_at")
+    favorites = Listing.objects.filter(favorite__store=store, status=Listing.Status.ACTIVE, store__suspended=False)
+    return render(request, "dashboard.html", {"store": store, "deals": deals, "favorites": favorites})
+
+
+@login_required
+def publish(request):
+    store = current_store(request, verified=True)
+    form = ListingForm(request.POST if request.method == "POST" else None)
+    if form.is_valid():
+        listing = form.save(commit=False)
+        listing.store = store
+        listing.save()
+        return redirect("listing", pk=listing.pk)
+    return render(request, "form.html", {"title": "Anunciar peça", "form": form})
+
+
+def listing_detail(request, pk):
+    listing = get_object_or_404(Listing.objects.select_related("store"), pk=pk, store__suspended=False)
+    store = getattr(request.user, "store", None)
+    active = listing.status == Listing.Status.ACTIVE
+    if not active and store != listing.store:
+        raise PermissionDenied
+    return render(request, "listing.html", {"item": listing, "active": active, "store": store, "rates": rates()})
+
+
+@login_required
+@require_POST
+def favorite(request, pk):
+    store = current_store(request)
+    listing = get_object_or_404(Listing, pk=pk, status=Listing.Status.ACTIVE, store__suspended=False)
+    if request.POST.get("action") == "remove":
+        Favorite.objects.filter(store=store, listing=listing).delete()
+    else:
+        Favorite.objects.get_or_create(store=store, listing=listing)
+    return redirect("dashboard")
+
+
+@login_required
+def report(request, pk):
+    store = current_store(request)
+    listing = get_object_or_404(Listing, pk=pk, status=Listing.Status.ACTIVE, store__suspended=False)
+    form = TextForm(request.POST if request.method == "POST" else None)
+    if form.is_valid():
+        Report.objects.create(reporter=store, listing=listing, reason=form.cleaned_data["text"])
+        messages.success(request, "Denúncia encaminhada para análise.")
+        return redirect("listing", pk=pk)
+    return render(request, "form.html", {"title": "Denunciar anúncio", "form": form})
+
+
+@login_required
+@transaction.atomic
+def propose(request, pk):
+    buyer = current_store(request, verified=True)
+    target = get_object_or_404(Listing, pk=pk, status=Listing.Status.ACTIVE,
+                               store__verified=True, store__suspended=False)
+    if target.store_id == buyer.pk:
+        raise PermissionDenied
+    form = ProposalForm(request.POST if request.method == "POST" else None, store=buyer, target=target)
+    fees = rates()
+    if form.is_valid():
+        offered = form.cleaned_data.get("offered")
+        amount = form.cleaned_data["amount"]
+        fee = fees.swap_fee if offered else (amount * fees.commission / 100).quantize(
+            Decimal("0.01"), rounding=ROUND_HALF_UP
+        )
+        deal = Deal.objects.create(buyer=buyer, seller=target.store, target=target,
+                                   offered=offered, amount=amount, fee=fee)
+        return redirect("deal", pk=deal.pk)
+    return render(request, "form.html", {"title": f"Proposta · {target.title}", "form": form,
+                                          "proposal_rates": fees})
+
+
+@login_required
+@transaction.atomic
+def deal_detail(request, pk):
+    store = current_store(request)
+    deal = get_object_or_404(Deal.objects.filter(Q(buyer=store) | Q(seller=store)), pk=pk)
+    seller = deal.seller_id == store.pk
+    proposed = deal.status == Deal.Status.PROPOSED
+    accepted = deal.status == Deal.Status.ACCEPTED
+    form = TextForm()
+    if request.method == "POST":
+        current_store(request, verified=True)
+        action = request.POST.get("action")
+        items = Listing.objects.filter(pk__in=[deal.target_id, deal.offered_id])
+        if action == "accept" and seller and proposed:
+            available = items.filter(status=Listing.Status.ACTIVE, store__verified=True, store__suspended=False)
+            if available.count() != (2 if deal.offered_id else 1):
+                messages.error(request, "Uma das peças está indisponível.")
+                return redirect("deal", pk=pk)
+            available.update(status=Listing.Status.RESERVED)
+            deal.status = Deal.Status.ACCEPTED
+        elif action == "cancel" and proposed:
+            deal.status = Deal.Status.CANCELLED
+        elif action == "dispute" and accepted:
+            deal.status = Deal.Status.DISPUTED
+        elif action == "received" and accepted:
+            if seller:
+                deal.seller_received = True
+            else:
+                deal.buyer_received = True
+            if deal.seller_received and deal.buyer_received:
+                items.update(status=Listing.Status.SWAPPED if deal.offered_id else Listing.Status.SOLD)
+                deal.status = Deal.Status.COMPLETE
+        elif action == "message" and (proposed or accepted or deal.status == Deal.Status.DISPUTED):
+            form = TextForm(request.POST)
+            if form.is_valid():
+                Message.objects.create(deal=deal, sender=store, body=form.cleaned_data["text"])
+        else:
+            raise PermissionDenied
+        if not form.errors:
+            deal.save()
+            return redirect("deal", pk=pk)
+    return render(request, "deal.html", {"deal": deal, "seller": seller, "proposed": proposed,
+                                          "accepted": accepted, "form": form,
+                                          "net": deal.amount - deal.fee,
+                                          "chat_open": proposed or accepted or deal.status == Deal.Status.DISPUTED})
+
+
+def vip(request):
+    return render(request, "vip.html", {"rates": rates()})
