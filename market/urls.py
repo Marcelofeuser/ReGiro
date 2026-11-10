@@ -11,6 +11,7 @@ urlpatterns = [
     path("sair/", LogoutView.as_view(), name="logout"),
     path("cadastro/", views.register, name="register"),
     path("painel/", views.dashboard, name="dashboard"),
+    path("painel/empresa/", views.store_profile, name="store_profile"),
     path("anunciar/", views.publish, name="publish"),
     path("painel/anuncios/<int:pk>/", views.manage_listing, name="manage_listing"),
     path("pecas/<int:pk>/", views.listing_detail, name="listing"),

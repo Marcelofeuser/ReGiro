@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Dados da empresa{% endblock %}
+{% block content %}
+<section><article class="panel">
+  <a class="back-link" href="{% url 'dashboard' %}">← Minha loja</a>
+  <div class="internal-banner"><small>CADASTRO DA EMPRESA</small><h2>{{ store.name }}</h2>
+  {% if store.verified %}<span class="tag">Loja verificada</span>
+  {% else %}<span class="tag status-waiting">Aguardando verificação</span>{% endif %}</div>
+  <h3>Dados da empresa</h3>
+  <dl>
+    <dt>Razão social</dt><dd>{{ store.legal_name }}</dd>
+    <dt>CNPJ</dt><dd>{{ store.cnpj }}</dd>
+    <dt>Endereço</dt><dd>{{ store.address }}</dd>
+    <dt>Responsável</dt><dd>{{ store.contact }}</dd>
+    <dt>E-mail comercial</dt><dd>{{ store.email }}</dd>
+    <dt>Telefone comercial</dt><dd>{{ store.phone }}</dd>
+  </dl>
+  <h3>Usuário de acesso</h3>
+  <dl><dt>Usuário vinculado à loja</dt><dd>{{ user.get_username }}</dd></dl>
+</article></section>
+{% endblock %}

@@ -47,6 +47,10 @@ def catalog(request):
 
 @transaction.atomic
 def register(request):
+    if request.user.is_authenticated:
+        if hasattr(request.user, "store"):
+            return redirect("dashboard")
+        raise PermissionDenied("Saia da conta atual para cadastrar uma loja.")
     account = UserCreationForm(request.POST if request.method == "POST" else None)
     profile = StoreForm(request.POST if request.method == "POST" else None)
     if request.method == "POST" and all([account.is_valid(), profile.is_valid()]):
@@ -54,7 +58,7 @@ def register(request):
         Store.objects.create(user=user, **profile.cleaned_data)
         login(request, user)
         return redirect("dashboard")
-    return render(request, "form.html", {"title": "Cadastre sua loja", "form": account, "extra": profile})
+    return render(request, "register.html", {"account": account, "profile": profile})
 
 
 def current_store(request, verified=False):
@@ -92,6 +96,11 @@ def dashboard(request):
 
 
 @login_required
+def store_profile(request):
+    return render(request, "store_profile.html", {"store": current_store(request)})
+
+
+@login_required
 def manage_listing(request, pk):
     store = current_store(request, verified=True)
     with transaction.atomic():
@@ -123,7 +132,7 @@ def publish(request):
         listing.store = store
         listing.save()
         return redirect("listing", pk=listing.pk)
-    return render(request, "form.html", {"title": "Anunciar peça", "form": form})
+    return render(request, "form.html", {"title": "Anunciar peça", "form": form, "listing_store": store})
 
 
 def listing_detail(request, pk):

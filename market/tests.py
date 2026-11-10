@@ -85,3 +85,42 @@ class MarketplaceFlowTests(TestCase):
         listing.refresh_from_db()
         self.assertEqual(listing.status, Listing.Status.CLOSED)
         self.assertNotContains(self.client.get(reverse("catalog")), "Alternador")
+
+    def test_company_credentials_and_inventory_are_independent(self):
+        companies = [
+            ("loja_alfa", "Access-alfa-3!2026", "Alfa Comércio", "04.252.011/0001-10", "Disco Alfa"),
+            ("loja_beta", "Access-beta-7!2026", "Beta Comércio", "11.222.333/0001-81", "Disco Beta"),
+        ]
+        for username, password, name, cnpj, title in companies:
+            self.assertRedirects(self.client.post(reverse("register"), {
+                "username": username, "password1": password, "password2": password,
+                "legal_name": name, "name": name, "cnpj": cnpj, "address": "Rua Um",
+                "phone": "11999999999", "email": f"{username}@example.com", "contact": "Responsável",
+            }), reverse("dashboard"))
+            store = Store.objects.get(name=name)
+            store.verified = True
+            store.save(update_fields=["verified"])
+            response = self.client.post(reverse("publish"), {
+                "title": title, "description": "Lote novo", "category": "Freios",
+                "manufacturer": "Marca", "code": "ABC", "condition": "Nova lacrada",
+                "quantity": 1, "price": "100.00", "city": "São Paulo, SP",
+                "delivery": "Retirada", "provenance": "Nota fiscal", "mode": Listing.Mode.SALE,
+                "store": Store.objects.exclude(pk=store.pk).values_list("pk", flat=True).first() or store.pk,
+            })
+            item = Listing.objects.get(title=title)
+            self.assertRedirects(response, reverse("listing", args=[item.pk]))
+            self.assertEqual(item.store, store)
+            self.client.post(reverse("logout"))
+
+        username, password, name, _, title = companies[0]
+        self.assertFalse(self.client.login(username=username, password=companies[1][1]))
+        self.assertTrue(self.client.login(username=username, password=password))
+        dashboard = self.client.get(reverse("dashboard"))
+        self.assertContains(dashboard, title)
+        self.assertNotContains(dashboard, companies[1][4])
+        profile = self.client.get(reverse("store_profile"))
+        self.assertContains(profile, name)
+        self.assertNotContains(profile, companies[1][2])
+        other_item = Listing.objects.get(title=companies[1][4])
+        self.assertEqual(self.client.get(reverse("manage_listing", args=[other_item.pk])).status_code, 404)
+        self.assertContains(self.client.get(reverse("catalog")), other_item.title)

@@ -10,7 +10,10 @@
       {% if store.verified %}<span class="tag">Loja verificada</span>
       {% else %}<span class="tag status-waiting">Aguardando verificação</span><p>Você poderá anunciar e negociar após a aprovação do cadastro.</p>{% endif %}
     </div>
-    {% if store.verified %}<a class="button" href="{% url 'publish' %}">+ Anunciar peça</a>{% endif %}
+    <div class="record-actions">
+      <a class="button hero-outline" href="{% url 'store_profile' %}">Dados da empresa</a>
+      {% if store.verified %}<a class="button" href="{% url 'publish' %}">+ Anunciar peça</a>{% endif %}
+    </div>
   </div>
   <h2 class="workspace-label">Seu estoque em números</h2>
   <dl class="metrics">{% for label, total in metrics %}<div><dt>{{ label }}</dt><dd>{{ total }}</dd></div>{% endfor %}</dl>

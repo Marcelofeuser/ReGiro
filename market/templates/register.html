@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Cadastrar empresa{% endblock %}
+{% block content %}
+<section>
+  <article class="panel">
+    <div class="internal-banner"><small>REGIRO · CONTA EMPRESARIAL</small><h2>Cadastre sua loja</h2>
+    <p>Crie o cadastro da empresa e o usuário que terá acesso ao estoque dela.</p></div>
+    <form method="post">
+      {% csrf_token %}
+      <fieldset class="account-section">
+        <legend>Dados da empresa</legend>
+        {{ profile.as_p }}
+      </fieldset>
+      <fieldset class="account-section">
+        <legend>Usuário de acesso</legend>
+        {{ account.as_p }}
+      </fieldset>
+      <button>Cadastrar empresa e usuário</button>
+    </form>
+  </article>
+</section>
+{% endblock %}
