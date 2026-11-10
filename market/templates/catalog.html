@@ -1,14 +1,22 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="hero"><small>MARKETPLACE ENTRE LOJAS DE AUTOPEÇAS</small><h1>Peça parada vira<br><em>oportunidade.</em></h1>
+<section class="hero"><div class="hero-copy"><small><span class="signal"></span> MARKETPLACE ENTRE LOJAS</small><h1>Peça parada vira<br><em>oportunidade.</em></h1>
 <p>Encontre peças para sua loja e coloque seu estoque de volta em circulação.</p>
-<a class="button" href="#catalogo">Explorar catálogo ↓</a></section>
+<div class="hero-actions"><a class="button" href="#catalogo">Explorar catálogo ↓</a>
+{% if user.store.verified %}<a class="button hero-outline" href="{% url 'publish' %}">Anunciar peça</a>
+{% elif not user.is_authenticated %}<a class="button hero-outline" href="{% url 'register' %}">Cadastrar minha loja</a>{% endif %}</div></div>
+<div class="hero-index" aria-hidden="true">01 / REGIRO &nbsp; ━━━</div></section>
+<section class="value-strip" aria-label="Como funciona o ReGiro">
+  <div><span aria-hidden="true">01</span><div><strong>Encontre pelo código</strong><small>Busque também por veículo e fabricante</small></div></div>
+  <div><span aria-hidden="true">02</span><div><strong>Negocie entre lojas</strong><small>Venda, oferta ou troca de estoque</small></div></div>
+  <div><span aria-hidden="true">03</span><div><strong>Acompanhe pelo painel</strong><small>Do aceite à confirmação de entrega</small></div></div>
+</section>
 <section id="catalogo"><small>ESTOQUE EM CIRCULAÇÃO</small><h2>Encontre a peça certa</h2>
 <form class="filters">{% for field in filters %}<label>{{ field.label }}{{ field }}{{ field.errors }}</label>{% endfor %}
 <button>Buscar</button></form>
 <p>{{ page.paginator.count }} peça{{ page.paginator.count|pluralize }} no catálogo</p>
 <div class="grid">{% for item in page %}
-<article><span class="tag">{{ item.get_mode_display }}</span><h3>{{ item.title }}</h3>
+<article class="catalog-card"><div class="part-banner"><span aria-hidden="true">⌁</span><span>{{ item.category }}</span></div><span class="tag">{{ item.get_mode_display }}</span><h3>{{ item.title }}</h3>
 <p>{{ item.manufacturer }} · {{ item.code }}<br>{{ item.condition }} · {{ item.city }}</p>
 <p>{{ item.store }} {% if item.store.verified %}· Loja verificada{% endif %}</p>
 <strong class="price">R$ {{ item.price }}</strong><a class="button" href="{% url 'listing' item.pk %}">Ver detalhes</a></article>
