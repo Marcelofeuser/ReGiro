@@ -110,3 +110,8 @@ class Favorite(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["store", "listing"], name="unique_favorite")]
+
+
+class ListingPhoto(models.Model):
+    listing = models.OneToOneField(Listing, on_delete=models.CASCADE, related_name="photo")
+    content = models.BinaryField(editable=False)

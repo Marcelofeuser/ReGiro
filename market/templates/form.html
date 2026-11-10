@@ -3,4 +3,4 @@
 {% block content %}<section><article class="panel"><div class="internal-banner"><small>REGIRO · PEÇAS ENTRE LOJAS</small><h2>{{ title }}</h2></div>
 {% if listing_store %}<p class="info-note">Esta peça será cadastrada no estoque de <strong>{{ listing_store.name }}</strong>.</p>{% endif %}
 {% if proposal_rates %}<p class="info-note">Venda: comissão de {{ proposal_rates.commission }}% do vendedor. Troca: tarifa única de R$ {{ proposal_rates.swap_fee }} da loja proponente. Valores informativos neste ambiente.</p>{% endif %}
-<form method="post">{% csrf_token %}{{ form.as_p }}{{ extra.as_p }}<button>Confirmar</button></form></article></section>{% endblock %}
+<form method="post"{% if listing_store %} enctype="multipart/form-data"{% endif %}>{% csrf_token %}{{ form.as_p }}{{ extra.as_p }}<button>Confirmar</button></form></article></section>{% endblock %}

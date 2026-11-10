@@ -1,10 +1,14 @@
 from decimal import Decimal
+from io import BytesIO
 
 from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import Deal, Listing, Store
+from PIL import Image
+
+from .models import Deal, Listing, ListingPhoto, Store
 
 
 class MarketplaceFlowTests(TestCase):
@@ -124,3 +128,38 @@ class MarketplaceFlowTests(TestCase):
         other_item = Listing.objects.get(title=companies[1][4])
         self.assertEqual(self.client.get(reverse("manage_listing", args=[other_item.pk])).status_code, 404)
         self.assertContains(self.client.get(reverse("catalog")), other_item.title)
+
+
+    def test_photo_is_validated_and_follows_listing_visibility(self):
+        owner = self.store("fotografa", "12345678912345")
+        listing = self.listing(owner, "Alternador")
+        payload = {
+            "title": listing.title, "description": listing.description, "category": listing.category,
+            "manufacturer": listing.manufacturer, "code": listing.code, "condition": listing.condition,
+            "quantity": 1, "price": "100.00", "city": listing.city,
+            "delivery": listing.delivery, "provenance": listing.provenance, "mode": listing.mode,
+        }
+        photo_url = reverse("listing_photo", args=[listing.pk])
+        manage_url = reverse("manage_listing", args=[listing.pk])
+        self.client.force_login(owner.user)
+        bad_photo = SimpleUploadedFile("peca.png", b"not an image", content_type="image/png")
+        self.assertContains(self.client.post(manage_url, {**payload, "photo_file": bad_photo}),
+                            "Envie uma foto válida")
+        self.assertFalse(ListingPhoto.objects.exists())
+        image = BytesIO()
+        Image.new("RGB", (40, 30), "green").save(image, "PNG")
+        photo = SimpleUploadedFile("peca.png", image.getvalue(), content_type="image/png")
+        self.assertRedirects(self.client.post(manage_url, {**payload, "photo_file": photo}),
+                             reverse("dashboard"))
+        self.client.logout()
+        response = self.client.get(photo_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "image/jpeg")
+        with Image.open(BytesIO(response.content)) as served:
+            self.assertEqual(served.format, "JPEG")
+        self.assertContains(self.client.get(reverse("catalog")), photo_url)
+        listing.status = Listing.Status.CLOSED
+        listing.save(update_fields=["status"])
+        self.assertEqual(self.client.get(photo_url).status_code, 404)
+        self.client.force_login(owner.user)
+        self.assertEqual(self.client.get(photo_url).status_code, 200)

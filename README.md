@@ -40,7 +40,7 @@ Fora do modo local, configure também `REGIRO_SECRET_KEY` e `REGIRO_HOSTS`. As m
 ## Fluxo disponível
 
 - Cadastro, login, checagem de dígitos do CNPJ numérico e aprovação manual.
-- Publicação de anúncios e catálogo com busca, filtros, ordenação, favoritos e denúncias.
+- Publicação de anúncios com uma foto opcional e catálogo com busca, filtros, ordenação, favoritos e denúncias.
 - Proposta de venda, oferta ou troca por anúncio próprio, com diferença opcional em dinheiro. A conversa fica restrita às lojas participantes.
 - Aceite da vendedora reserva as peças. A conclusão exige confirmação das duas lojas. Antes do aceite é possível cancelar a proposta. Depois, é possível abrir uma disputa, mantendo a reserva para análise.
 - Painel da loja com anúncios, favoritos e negociações. Administração com verificação e suspensão de lojas, moderação de anúncios, denúncias, consulta a negociações e configuração da comissão e tarifa.
@@ -57,7 +57,7 @@ O teste cobre cadastro, aprovação, busca, proposta, restrição de acesso, con
 ## Antes da operação comercial
 
 - Verificação de e-mail e telefone, validação cadastral externa e suporte ao CNPJ alfanumérico.
-- Fotos com armazenamento dedicado, alertas, contrapropostas estruturadas e resolução administrativa de disputas.
+- Armazenamento dedicado para galerias com várias fotos, alertas, contrapropostas estruturadas e resolução administrativa de disputas. Atualmente cada peça aceita uma foto, otimizada para JPEG e guardada no banco.
 - Clube VIP com assinaturas, cupons, uso de benefícios e controle de renovação.
 - Termos, privacidade, regras de cancelamento, avaliações e controles contra abuso.
 - Provedor de pagamentos de marketplace com divisão de valores, credenciais de teste e segredo de notificações. A integração precisa validar notificações, processar eventos de forma idempotente e reconciliar cobranças e reembolsos. A operação real exige credenciais próprias, recebedores aprovados, produtos e preços de recorrência configurados.

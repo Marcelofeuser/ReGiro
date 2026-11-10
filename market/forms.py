@@ -1,6 +1,8 @@
 import re
+from io import BytesIO
 
 from django import forms
+from PIL import Image, ImageOps, UnidentifiedImageError
 
 from .models import Listing, Store
 
@@ -25,6 +27,30 @@ class StoreForm(forms.ModelForm):
 
 
 class ListingForm(forms.ModelForm):
+    photo_file = forms.FileField(
+        label="Foto da peça", required=False,
+        help_text="Use uma foto real da peça, em JPEG, PNG ou WebP, de até 5 MB.",
+        widget=forms.ClearableFileInput(attrs={"accept": "image/jpeg,image/png,image/webp"}),
+    )
+
+    def clean_photo_file(self):
+        upload = self.cleaned_data["photo_file"]
+        if not upload:
+            return None
+        if upload.size > 5 * 1024 * 1024:
+            raise forms.ValidationError("A foto deve ter até 5 MB.")
+        try:
+            with Image.open(upload, formats=["JPEG", "PNG", "WEBP"]) as source:
+                if source.width * source.height > 24_000_000:
+                    raise forms.ValidationError("A foto deve ter até 24 megapixels.")
+                image = ImageOps.exif_transpose(source).convert("RGB")
+                image.thumbnail((1200, 1200))
+                output = BytesIO()
+                image.save(output, "JPEG", quality=80, optimize=True)
+                return output.getvalue()
+        except (UnidentifiedImageError, OSError, ValueError, SyntaxError, Image.DecompressionBombError) as error:
+            raise forms.ValidationError("Envie uma foto válida em JPEG, PNG ou WebP.") from error
+
     class Meta:
         model = Listing
         exclude = ("store", "status")

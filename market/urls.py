@@ -15,6 +15,7 @@ urlpatterns = [
     path("anunciar/", views.publish, name="publish"),
     path("painel/anuncios/<int:pk>/", views.manage_listing, name="manage_listing"),
     path("pecas/<int:pk>/", views.listing_detail, name="listing"),
+    path("pecas/<int:pk>/foto/", views.listing_photo, name="listing_photo"),
     path("pecas/<int:pk>/favorito/", views.favorite, name="favorite"),
     path("pecas/<int:pk>/denunciar/", views.report, name="report"),
     path("pecas/<int:pk>/propor/", views.propose, name="propose"),

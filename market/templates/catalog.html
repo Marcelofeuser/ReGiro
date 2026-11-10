@@ -16,7 +16,9 @@
 <button>Buscar</button></form>
 <p>{{ page.paginator.count }} peça{{ page.paginator.count|pluralize }} no catálogo</p>
 <div class="grid">{% for item in page %}
-<article class="catalog-card"><div class="part-banner"><span aria-hidden="true">⌁</span><span>{{ item.category }}</span></div><span class="tag">{{ item.get_mode_display }}</span><h3>{{ item.title }}</h3>
+<article class="catalog-card">
+{% if item.has_photo %}<img class="catalog-photo" src="{% url 'listing_photo' item.pk %}" alt="Foto de {{ item.title }}" loading="lazy" width="400" height="240">{% endif %}
+<div class="part-banner"><span aria-hidden="true">⌁</span><span>{{ item.category }}</span></div><span class="tag">{{ item.get_mode_display }}</span><h3>{{ item.title }}</h3>
 <p>{{ item.manufacturer }} · {{ item.code }}<br>{{ item.condition }} · {{ item.city }}</p>
 <p>{{ item.store }} {% if item.store.verified %}· Loja verificada{% endif %}</p>
 <strong class="price">R$ {{ item.price }}</strong><a class="button" href="{% url 'listing' item.pk %}">Ver detalhes</a></article>

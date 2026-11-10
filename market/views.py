@@ -7,12 +7,13 @@ from django.contrib.auth.forms import UserCreationForm
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Count, Q
+from django.db.models import Count, Exists, OuterRef, Q
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from .forms import CatalogFilters, ListingForm, ProposalForm, StoreForm, TextForm
-from .models import Deal, Favorite, Listing, Message, Rates, Report, Store
+from .models import Deal, Favorite, Listing, ListingPhoto, Message, Rates, Report, Store
 
 
 def rates():
@@ -21,6 +22,7 @@ def rates():
 
 def catalog(request):
     results = Listing.objects.filter(status=Listing.Status.ACTIVE, store__suspended=False).select_related("store")
+    results = results.annotate(has_photo=Exists(ListingPhoto.objects.filter(listing=OuterRef("pk"))))
     filters = CatalogFilters(request.GET)
     filters.is_valid()
     query = filters.cleaned_data.get("q", "")
@@ -113,24 +115,33 @@ def manage_listing(request, pk):
             messages.success(request, "Anúncio encerrado e retirado do catálogo.")
             return redirect("dashboard")
         has_proposals = item.proposals.exists() or item.offers.exists()
-        form = ListingForm(request.POST if request.method == "POST" else None, instance=item)
+        form = ListingForm(request.POST, request.FILES, instance=item) if request.method == "POST" else ListingForm(instance=item)
         if request.method == "POST" and has_proposals:
             raise PermissionDenied("Anúncios com histórico de propostas não podem ser editados.")
         if form.is_valid():
             form.save()
+            save_photo(item, form)
             messages.success(request, "Anúncio atualizado.")
             return redirect("dashboard")
     return render(request, "manage_listing.html", {"item": item, "form": form, "has_proposals": has_proposals})
 
 
+def save_photo(item, form):
+    content = form.cleaned_data["photo_file"]
+    if content is not None:
+        ListingPhoto.objects.update_or_create(listing=item, defaults={"content": content})
+
+
 @login_required
+@transaction.atomic
 def publish(request):
     store = current_store(request, verified=True)
-    form = ListingForm(request.POST if request.method == "POST" else None)
+    form = ListingForm(request.POST, request.FILES) if request.method == "POST" else ListingForm()
     if form.is_valid():
         listing = form.save(commit=False)
         listing.store = store
         listing.save()
+        save_photo(listing, form)
         return redirect("listing", pk=listing.pk)
     return render(request, "form.html", {"title": "Anunciar peça", "form": form, "listing_store": store})
 
@@ -141,7 +152,22 @@ def listing_detail(request, pk):
     active = listing.status == Listing.Status.ACTIVE
     if not active and store != listing.store:
         raise PermissionDenied
-    return render(request, "listing.html", {"item": listing, "active": active, "store": store, "rates": rates()})
+    return render(request, "listing.html", {
+        "item": listing, "active": active, "store": store, "rates": rates(),
+        "has_photo": ListingPhoto.objects.filter(listing=listing).exists(),
+    })
+
+
+def listing_photo(request, pk):
+    store = getattr(request.user, "store", None)
+    visible = Q(listing__status=Listing.Status.ACTIVE)
+    if store and not store.suspended:
+        visible |= Q(listing__store=store)
+    photo = get_object_or_404(
+        ListingPhoto.objects.filter(visible, listing__store__suspended=False), listing_id=pk,
+    )
+    return HttpResponse(bytes(photo.content), content_type="image/jpeg",
+                        headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"})
 
 
 @login_required

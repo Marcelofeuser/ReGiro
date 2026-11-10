@@ -3,6 +3,7 @@
 {% block content %}<section><article class="panel">
 <span class="tag">{{ item.get_mode_display }} · {{ item.get_status_display }}</span><h2>{{ item.title }}</h2>
 <p>{{ item.store }} · {{ item.city }} {% if item.store.verified %}· Loja verificada{% endif %}</p>
+{% if has_photo %}<img class="listing-photo" src="{% url 'listing_photo' item.pk %}" alt="Foto de {{ item.title }}">{% endif %}
 <strong class="price">R$ {{ item.price }}</strong><p>{{ item.description|linebreaksbr }}</p>
 <dl><dt>Categoria</dt><dd>{{ item.category }}</dd><dt>Fabricante e código</dt><dd>{{ item.manufacturer }} · {{ item.code }}</dd>
 {% if item.oem %}<dt>OEM</dt><dd>{{ item.oem }}</dd>{% endif %}
