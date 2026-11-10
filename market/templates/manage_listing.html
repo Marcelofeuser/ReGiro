@@ -2,13 +2,14 @@
 {% block title %}Gerenciar anúncio{% endblock %}
 {% block content %}
 <section><article class="panel">
-<a href="{% url 'dashboard' %}">← Minha loja</a>
-<h2>{{ item.title }}</h2>
+<a class="back-link" href="{% url 'dashboard' %}">← Minha loja</a>
+<div class="internal-banner"><small>GERENCIAR ANÚNCIO</small><h2>{{ item.title }}</h2>
+<span class="tag">{{ item.get_status_display }}</span></div>
 {% if has_proposals %}<p>Este anúncio tem histórico de propostas. Seus dados permanecem fixos para preservar as condições negociadas.</p>
 {% else %}<form method="post">{% csrf_token %}{{ form.as_p }}<button>Salvar alterações</button></form>{% endif %}
-<hr>
+<div class="danger-zone">
 <h3>Encerrar anúncio</h3>
 <p>A peça sai do catálogo e propostas pendentes deixam de poder ser aceitas.</p>
-<form method="post">{% csrf_token %}<button class="secondary" name="action" value="close">Encerrar anúncio</button></form>
-</article></section>
+<form method="post">{% csrf_token %}<button class="danger-button" name="action" value="close">Encerrar anúncio</button></form>
+</div></article></section>
 {% endblock %}

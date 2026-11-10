@@ -1,14 +1,57 @@
 {% extends "base.html" %}
 {% block title %}Negociação {{ deal.pk }}{% endblock %}
-{% block content %}<section><article class="panel"><span class="tag">{{ deal.get_status_display }}</span><h2>{{ deal.target.title }}</h2>
-<p>{{ deal.buyer }} → {{ deal.seller }}</p>
-{% if deal.offered %}<p>Peça oferecida em troca: {{ deal.offered.title }}.</p><p>Diferença: R$ {{ deal.amount }}. Tarifa da loja proponente: R$ {{ deal.fee }}.</p>
-{% else %}<p>Valor: R$ {{ deal.amount }}. Comissão da loja vendedora: R$ {{ deal.fee }}. Líquido estimado antes de eventuais tarifas do provedor: R$ {{ net }}.</p>{% endif %}
-<p>Valores informativos. Nenhuma cobrança é processada neste ambiente.</p>
-{% if proposed or accepted %}<form class="actions" method="post">{% csrf_token %}
-{% if proposed %}{% if seller %}<button name="action" value="accept">Aceitar proposta</button>{% endif %}<button class="secondary" name="action" value="cancel">Cancelar proposta</button>{% endif %}
-{% if accepted %}<button name="action" value="received">Confirmar recebimento ou entrega</button><button class="secondary" name="action" value="dispute">Abrir disputa</button>{% endif %}</form>{% endif %}
-{% if accepted %}<p>Confirmações: proponente {{ deal.buyer_received|yesno:"sim,não" }} · vendedora {{ deal.seller_received|yesno:"sim,não" }}.</p>{% endif %}
-<h3>Conversa</h3><ul class="conversation">{% for entry in deal.messages.all %}<li><strong>{{ entry.sender }}</strong> <small>{{ entry.created_at|date:"d/m H:i" }}</small><p>{{ entry.body|linebreaksbr }}</p></li>{% empty %}<li>Nenhuma mensagem ainda.</li>{% endfor %}</ul>
-{% if chat_open %}<form method="post">{% csrf_token %}{{ form.as_p }}<button name="action" value="message">Enviar mensagem</button></form>{% endif %}
-</article></section>{% endblock %}
+{% block content %}
+<section class="workspace">
+  <a class="back-link" href="{% url 'dashboard' %}?tab={% if seller %}incoming{% else %}outgoing{% endif %}">← Voltar às propostas</a>
+  <div class="internal-banner">
+    <small>{% if deal.offered %}TROCA{% else %}VENDA{% endif %} · PROPOSTA Nº {{ deal.pk }}</small>
+    <h1>{{ deal.target.title }}</h1>
+    <p>{{ deal.buyer }} → {{ deal.seller }}</p>
+    <span class="tag status-{{ deal.status }}">{{ deal.get_status_display }}</span>
+  </div>
+
+  <div class="deal-layout">
+    <article>
+      <h2 class="workspace-label">Resumo da proposta</h2>
+      {% if deal.offered %}<p>Peça oferecida em troca <strong>{{ deal.offered.title }}</strong></p>{% endif %}
+      <dl class="deal-values">
+        <div><dt>{% if deal.offered %}Diferença em dinheiro{% else %}Valor da venda{% endif %}</dt><dd>R$ {{ deal.amount }}</dd></div>
+        {% if deal.offered %}
+        <div><dt>Tarifa da loja proponente</dt><dd>R$ {{ deal.fee }}</dd></div>
+        {% else %}
+        <div><dt>Comissão da loja vendedora</dt><dd>R$ {{ deal.fee }}</dd></div>
+        <div><dt>Líquido estimado antes de tarifas do provedor</dt><dd>R$ {{ net }}</dd></div>
+        {% endif %}
+      </dl>
+      <p class="info-note">Valores informativos. Nenhuma cobrança é processada neste ambiente.</p>
+      {% if accepted %}
+      <h3>Confirmações</h3>
+      <ul class="confirmation-list">
+        <li>Loja proponente <span class="tag {% if not deal.buyer_received %}status-waiting{% endif %}">{{ deal.buyer_received|yesno:"Confirmada,Pendente" }}</span></li>
+        <li>Loja vendedora <span class="tag {% if not deal.seller_received %}status-waiting{% endif %}">{{ deal.seller_received|yesno:"Confirmada,Pendente" }}</span></li>
+      </ul>
+      {% endif %}
+      {% if proposed or accepted %}
+      <form class="actions deal-actions" method="post">{% csrf_token %}
+        {% if proposed %}
+          {% if seller %}<button name="action" value="accept">Aceitar proposta</button>{% endif %}
+          <button class="secondary" name="action" value="cancel">Cancelar proposta</button>
+        {% endif %}
+        {% if accepted %}
+          {% if seller and not deal.seller_received or not seller and not deal.buyer_received %}<button name="action" value="received">Confirmar recebimento ou entrega</button>{% endif %}
+          <button class="secondary" name="action" value="dispute">Abrir disputa</button>
+        {% endif %}
+      </form>
+      {% endif %}
+    </article>
+    <article>
+      <h2 class="workspace-label">Conversa</h2>
+      <p>Mensagens entre as lojas desta negociação.</p>
+      <ul class="conversation">{% for entry in deal.messages.all %}
+        <li{% if entry.sender_id == user.store.pk %} class="own-message"{% endif %}><strong>{{ entry.sender }}</strong> <time datetime="{{ entry.created_at|date:'c' }}">{{ entry.created_at|date:"d/m H:i" }}</time><p>{{ entry.body|linebreaksbr }}</p></li>
+      {% empty %}<li>Nenhuma mensagem ainda.</li>{% endfor %}</ul>
+      {% if chat_open %}<form class="message-form" method="post">{% csrf_token %}{{ form.as_p }}<button name="action" value="message">Enviar mensagem</button></form>{% endif %}
+    </article>
+  </div>
+</section>
+{% endblock %}

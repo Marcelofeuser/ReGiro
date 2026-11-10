@@ -158,3 +158,41 @@ dd { margin: 0 0 .75rem; }
   button, .button, .catalog-card { transition: none; }
   button:hover, .button:hover, .catalog-card:hover { transform: none; }
 }
+
+.internal-banner {
+  padding: clamp(1.15rem, 4vw, 2.5rem);
+  border-radius: 1rem;
+  background: linear-gradient(90deg, #071c2e 10%, #0b2f3bf2 58%, #0b2f3bbb),
+    url("hero-brake.jpg") right 52% / cover;
+  color: white;
+  overflow-wrap: anywhere;
+}
+.internal-banner small { color: var(--mint); }
+.internal-banner p { color: #d8e9e9; margin: .55rem 0 .8rem; }
+.internal-banner .button { background: var(--mint); color: #082b24; }
+.internal-banner h2 { margin-bottom: .15em; }
+.workspace-label { font-size: 1.2rem; letter-spacing: -.025em; margin: 1rem 0 .5rem; }
+.metrics { margin-top: .65rem; }
+.status-waiting, .status-proposed, .status-reserved { color: #714200; background: #fff1d7; }
+.status-disputed { color: #85252d; background: #fae5e6; }
+.status-closed, .status-cancelled { color: #334854; background: #e8eef1; }
+.records .empty-state { display: block; text-align: center; padding-block: 2rem; }
+.empty-state .button { margin-top: .75rem; }
+.back-link { display: inline-block; margin-bottom: .85rem; color: var(--accent); font-weight: 700; }
+.deal-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 1rem; margin-top: 1rem; align-items: start; }
+.deal-layout .workspace-label { margin-top: 0; }
+.deal-values, .confirmation-list { padding: 0; }
+.deal-values > div, .confirmation-list li { display: flex; justify-content: space-between; gap: .6rem; align-items: center; border-bottom: 1px solid var(--border); padding: .65rem 0; }
+.deal-values dt { font-weight: 550; }
+.deal-values dd { margin: 0; font-weight: 750; white-space: nowrap; }
+.info-note { background: #edf5f3; border-radius: .55rem; padding: .75rem; font-size: .9rem; }
+.deal-actions { margin-top: 1rem; }
+.conversation .own-message { background: #daf1e8; }
+.conversation time { font-size: .8rem; color: var(--muted); }
+.danger-zone { margin-top: 1.4rem; border: 1px solid #edd6d8; background: #fff7f7; border-radius: .75rem; padding: 1rem; }
+.danger-zone h3 { margin-top: 0; }
+.danger-button { background: #9a3039; }
+@media (max-width: 760px) {
+  .deal-layout { grid-template-columns: minmax(0, 1fr); }
+  .workspace-tabs a { font-size: .9rem; }
+}

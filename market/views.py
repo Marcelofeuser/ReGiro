@@ -83,10 +83,11 @@ def dashboard(request):
     if tab not in collections:
         tab = "listings"
     page = Paginator(collections[tab], 12).get_page(request.GET.get("page"))
+    tabs = {"listings": "Meus anúncios", "incoming": "Propostas recebidas",
+            "outgoing": "Propostas enviadas", "favorites": "Peças salvas"}
     return render(request, "dashboard.html", {
         "store": store, "page": page, "tab": tab, "metrics": metrics,
-        "tabs": {"listings": "Meus anúncios", "incoming": "Recebidas",
-                 "outgoing": "Enviadas", "favorites": "Peças salvas"},
+        "tabs": tabs, "tab_label": tabs[tab],
     })
 
 
