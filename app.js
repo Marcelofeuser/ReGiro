@@ -20,10 +20,24 @@ const state = {
 };
 
 const formatBRL = (value) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value || 0);
+const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
+  "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+}[character]));
 const nowIso = () => new Date().toISOString();
 const uid = (arr) => arr.length + 1;
 
-const isValidCnpj = (cnpj) => /^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/.test(cnpj.trim());
+const isValidCnpj = (value) => {
+  const cnpj = String(value || "").replace(/\D/g, "");
+  if (cnpj.length !== 14 || /^([0-9])\1{13}$/.test(cnpj)) return false;
+  const digit = (base, weights) => {
+    const sum = [...base].reduce((total, number, index) => total + Number(number) * weights[index], 0);
+    const remainder = sum % 11;
+    return remainder < 2 ? 0 : 11 - remainder;
+  };
+  const first = digit(cnpj.slice(0, 12), [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+  const second = digit(cnpj.slice(0, 12) + first, [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+  return cnpj.endsWith(String(first) + String(second));
+};
 
 const getVip = (storeId) => state.vipSubscriptions.find((v) => v.storeId === storeId && new Date(v.endsAt) >= new Date());
 
@@ -74,19 +88,19 @@ const renderRules = () => {
 };
 
 const renderStores = () => {
-  el.storesList.innerHTML = state.stores.map((s) => `<div class="list-item">#${s.id} ${s.nomeFantasia} (${s.cnpj}) · status: ${s.status === "verified" ? "Loja verificada ✅" : s.status}</div>`).join("") || "<p>Nenhuma loja cadastrada.</p>";
+  el.storesList.innerHTML = state.stores.map((s) => `<div class="list-item">#${s.id} ${escapeHtml(s.nomeFantasia)} (${escapeHtml(s.cnpj)}) · status: ${s.status === "verified" ? "Loja verificada ✅" : s.status}</div>`).join("") || "<p>Nenhuma loja cadastrada.</p>";
 };
 
 const renderListings = (items = state.listings) => {
-  el.listings.innerHTML = items.map((l) => `<div class="list-item"><strong>#${l.id} ${l.titulo}</strong><br>${l.fabricante} · ${l.codigoPeca} · ${l.condicao}<br>${formatBRL(l.preco)} · ${l.localizacao} · ${l.distanciaKm}km · status: ${l.status}<br>NF: ${l.notaFiscal} · Garantia: ${l.garantia} · Procedência: ${l.procedencia}<br><small>Entrega: ${l.entrega} · Negociação: ${l.vendaDireta ? "venda" : ""}${l.aceitaTroca ? " troca" : ""}</small></div>`).join("") || "<p>Sem anúncios.</p>";
+  el.listings.innerHTML = items.map((l) => `<div class="list-item"><strong>#${l.id} ${escapeHtml(l.titulo)}</strong><br>${escapeHtml(l.fabricante)} · ${escapeHtml(l.codigoPeca)} · ${escapeHtml(l.condicao)}<br>${formatBRL(l.preco)} · ${escapeHtml(l.localizacao)} · ${l.distanciaKm}km · status: ${escapeHtml(l.status)}<br>NF: ${escapeHtml(l.notaFiscal)} · Garantia: ${escapeHtml(l.garantia)} · Procedência: ${escapeHtml(l.procedencia)}<br><small>Entrega: ${escapeHtml(l.entrega)} · Negociação: ${l.vendaDireta ? "venda" : ""}${l.aceitaTroca ? " troca" : ""}</small></div>`).join("") || "<p>Sem anúncios.</p>";
 };
 
 const renderNegotiations = () => {
-  el.negotiations.innerHTML = state.negotiations.map((n) => `<div class="list-item">#${n.id} ${n.type === "trade" ? "Troca" : "Venda"} · anúncio #${n.listingId} · iniciadora #${n.storeId}<br>Tarifa prevista: ${formatBRL(n.tradeFeePreview || 0)} · comissão prevista: ${formatBRL(n.saleCommissionPreview || 0)}<br>Aceites: iniciadora ${n.acceptStarter ? "✅" : "❌"} / outra loja ${n.acceptReceiver ? "✅" : "❌"}<br>Status: ${n.status}${n.netSellerEstimate != null ? ` · líquido vendedor ${formatBRL(n.netSellerEstimate)}` : ""}</div>`).join("") || "<p>Sem negociações.</p>";
+  el.negotiations.innerHTML = state.negotiations.map((n) => `<div class="list-item">#${n.id} ${n.type === "trade" ? "Troca" : "Venda"} · anúncio #${n.listingId} · iniciadora #${n.storeId}<br>Tarifa prevista: ${formatBRL(n.tradeFeePreview || 0)} · comissão prevista: ${formatBRL(n.saleCommissionPreview || 0)}<br>Aceites: iniciadora ${n.acceptStarter ? "✅" : "❌"} / outra loja ${n.acceptReceiver ? "✅" : "❌"}<br>Status: ${escapeHtml(n.status)}${n.netSellerEstimate != null ? ` · líquido vendedor ${formatBRL(n.netSellerEstimate)}` : ""}</div>`).join("") || "<p>Sem negociações.</p>";
 };
 
 const renderChat = () => {
-  el.chatLog.innerHTML = state.chats.map((c) => `<div class="list-item">Anúncio #${c.listingId} · ${c.sender}: ${c.message}</div>`).join("") || "<p>Sem mensagens.</p>";
+  el.chatLog.innerHTML = state.chats.map((c) => `<div class="list-item">Anúncio #${c.listingId} · ${escapeHtml(c.sender)}: ${escapeHtml(c.message)}</div>`).join("") || "<p>Sem mensagens.</p>";
 };
 
 const renderVip = () => {
@@ -98,7 +112,7 @@ const renderVip = () => {
 };
 
 const renderAlerts = () => {
-  el.alertsList.innerHTML = state.alerts.map((a) => `<div class="list-item">Loja #${a.storeId}: ${a.alert}</div>`).join("") || "<p>Sem alertas.</p>";
+  el.alertsList.innerHTML = state.alerts.map((a) => `<div class="list-item">Loja #${a.storeId}: ${escapeHtml(a.alert)}</div>`).join("") || "<p>Sem alertas.</p>";
 };
 
 const renderSavedListings = () => {
@@ -136,9 +150,15 @@ el.storeForm.addEventListener("submit", (e) => {
 el.listingForm.addEventListener("submit", (e) => {
   e.preventDefault();
   const data = Object.fromEntries(new FormData(e.target).entries());
+  const ownerStore = state.stores.find((store) => store.id === Number(data.storeId));
+  if (!ownerStore || ownerStore.status !== "verified") {
+    el.listingMessage.textContent = "Informe uma loja cadastrada e verificada para publicar.";
+    return;
+  }
   const listing = {
     id: uid(state.listings),
     ...data,
+    storeId: Number(data.storeId),
     quantidade: Number(data.quantidade),
     preco: Number(data.preco),
     distanciaKm: Number(data.distanciaKm || 0),
@@ -195,8 +215,37 @@ el.negotiationForm.addEventListener("submit", (e) => {
   e.preventDefault();
   const data = Object.fromEntries(new FormData(e.target).entries());
   const listing = state.listings.find((l) => l.id === Number(data.listingId));
-  if (!listing) {
-    el.negotiationPreview.textContent = "Anúncio não encontrado.";
+  if (!listing || listing.status !== "ativo") {
+    el.negotiationPreview.textContent = "Anúncio não encontrado ou indisponível.";
+    return;
+  }
+  const starterStore = state.stores.find((store) => store.id === Number(data.storeId));
+  if (!starterStore || starterStore.status !== "verified") {
+    el.negotiationPreview.textContent = "A loja iniciadora precisa estar cadastrada e verificada.";
+    return;
+  }
+  if (listing.storeId === starterStore.id) {
+    el.negotiationPreview.textContent = "A loja não pode negociar com o próprio anúncio.";
+    return;
+  }
+  if (!["sale", "trade"].includes(data.type)) {
+    el.negotiationPreview.textContent = "Tipo de negociação inválido.";
+    return;
+  }
+  if (data.type === "trade") {
+    const ownListing = state.listings.find((item) => item.id === Number(data.ownListingId));
+    if (!listing.aceitaTroca || !ownListing || ownListing.storeId !== starterStore.id || ownListing.status !== "ativo") {
+      el.negotiationPreview.textContent = "A troca exige um anúncio disponível da loja iniciadora e outro anúncio que aceite troca.";
+      return;
+    }
+  } else if (!listing.vendaDireta && !listing.aceitaOferta) {
+    el.negotiationPreview.textContent = "Este anúncio não está aceitando ofertas de venda.";
+    return;
+  }
+  const offerValue = Number(data.offerValue || 0);
+  const cashDifference = Number(data.cashDifference || 0);
+  if (!Number.isFinite(offerValue) || offerValue < 0 || !Number.isFinite(cashDifference)) {
+    el.negotiationPreview.textContent = "Informe valores válidos para a proposta.";
     return;
   }
 
@@ -206,8 +255,8 @@ el.negotiationForm.addEventListener("submit", (e) => {
     storeId: Number(data.storeId),
     listingId: Number(data.listingId),
     ownListingId: data.ownListingId ? Number(data.ownListingId) : null,
-    offerValue: Number(data.offerValue || 0),
-    cashDifference: Number(data.cashDifference || 0),
+    offerValue,
+    cashDifference,
     acceptStarter: false,
     acceptReceiver: false,
     receiptConfirmed: false,
@@ -251,7 +300,7 @@ const currentNegotiation = () => state.negotiations[state.negotiations.length - 
 
 el.acceptByStarter.addEventListener("click", () => {
   const n = currentNegotiation();
-  if (!n) return;
+  if (!n || n.concludedAt || n.status === "cancelada") return;
   n.acceptStarter = true;
   n.status = "aguardando confirmação";
   renderNegotiations();
@@ -259,7 +308,7 @@ el.acceptByStarter.addEventListener("click", () => {
 
 el.acceptByReceiver.addEventListener("click", () => {
   const n = currentNegotiation();
-  if (!n) return;
+  if (!n || n.concludedAt || n.status === "cancelada") return;
   n.acceptReceiver = true;
   n.status = "aguardando confirmação";
   renderNegotiations();
@@ -267,7 +316,7 @@ el.acceptByReceiver.addEventListener("click", () => {
 
 el.confirmReceipt.addEventListener("click", () => {
   const n = currentNegotiation();
-  if (!n) return;
+  if (!n || n.concludedAt || n.status === "cancelada") return;
   if (!n.acceptStarter || !n.acceptReceiver) {
     n.status = "pendente dos dois aceites";
   } else {
@@ -276,6 +325,10 @@ el.confirmReceipt.addEventListener("click", () => {
     n.concludedAt = nowIso();
     const listing = state.listings.find((l) => l.id === n.listingId);
     if (listing) listing.status = n.status;
+    if (n.type === "trade" && n.ownListingId) {
+      const ownListing = state.listings.find((item) => item.id === n.ownListingId);
+      if (ownListing) ownListing.status = "trocado";
+    }
   }
   renderListings();
   renderNegotiations();
