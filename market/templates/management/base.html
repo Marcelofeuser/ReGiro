@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Gestão da plataforma{% endblock %}
+{% block content %}
+<section class="workspace">
+<div class="internal-banner"><small>ADMINISTRAÇÃO GLOBAL · REGIRO</small>
+<h1 class="management-title">{% block heading %}Visão geral{% endblock %}</h1>
+<p>Todas as empresas · Administrador {{ user.get_username }}</p></div>
+<nav class="workspace-tabs management-nav" aria-label="Gestão do ReGiro">
+<a href="{% url 'management' %}">Visão geral e financeiro</a>
+<a href="{% url 'management_companies' %}">Empresas</a>
+<a href="{% url 'management_users' %}">Usuários</a>
+<a href="{% url 'management_settings' %}">Configurações</a>
+<a href="{% url 'admin:market_listing_changelist' %}">Anúncios</a>
+<a href="{% url 'admin:market_report_changelist' %}">Denúncias</a>
+</nav>
+{% block management_content %}{% endblock %}
+</section>
+{% endblock %}

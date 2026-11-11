@@ -1,0 +1,36 @@
+{% extends "management/base.html" %}
+{% load static %}
+{% block management_content %}
+<p class="info-note">Registros financeiros manuais. Recebimentos e estornos representam lançamentos confirmados pelo administrador. Projeção baseada nas cobranças abertas cadastradas. Os valores de vendas das lojas pertencem às lojas.</p>
+<dl class="metrics financial-metrics">
+<div><dt>Receita líquida registrada</dt><dd>R$ {{ net|floatformat:"2g" }}</dd></div>
+<div><dt>Recebido acumulado</dt><dd>R$ {{ received|floatformat:"2g" }}</dd></div>
+<div><dt>Estornos registrados</dt><dd>R$ {{ refunds|floatformat:"2g" }}</dd></div>
+<div><dt>Cobranças baixadas como perda</dt><dd>R$ {{ losses|floatformat:"2g" }}</dd></div>
+<div><dt>Total a receber</dt><dd>R$ {{ outstanding|floatformat:"2g" }}</dd></div>
+<div><dt>Vencido em aberto</dt><dd>R$ {{ overdue|floatformat:"2g" }}</dd></div>
+<div><dt>A vencer em 30 dias</dt><dd>R$ {{ projection|floatformat:"2g" }}</dd></div>
+</dl>
+<div class="grid">
+<article><h2 class="workspace-label">Empresas e usuários</h2><p>{{ company_count }} empresas · {{ users_count }} usuários</p><a href="{% url 'management_companies' %}">Ver todas as empresas →</a></article>
+<article><h2 class="workspace-label">Clube VIP</h2><p>{{ vip_count }} empresas com período pago vigente · {{ vip_total }} empresas com cobranças VIP cadastradas</p><p>{{ vip_paying_month }} empresas com recebimento em {{ month }} · {{ vip_debtors }} com parcelas VIP vencidas</p></article>
+<article><h2 class="workspace-label">Crescimento da receita líquida</h2><p>{% if growth != None %}{{ growth|floatformat:1 }}%{% else %}Sem base positiva para comparação{% endif %}</p><p>{{ month }} até hoje em comparação ao mês anterior completo.</p></article>
+</div>
+<div class="deal-layout charts">
+<article><h2 class="workspace-label">Desempenho financeiro · 12 meses</h2><div id="revenue-chart" class="chart" role="img" aria-label="Gráfico de recebimentos e estornos mensais"></div></article>
+<article><h2 class="workspace-label">Crescimento de empresas · 12 meses</h2><div id="companies-chart" class="chart" role="img" aria-label="Gráfico mensal de novos cadastros de empresas"></div></article>
+</div>
+<article class="management-card"><h2 class="workspace-label">Projeção de recebimentos cadastrados</h2><p>Cobranças em aberto com vencimento a partir de hoje. A previsão depende do recebimento das parcelas. Atrasos não entram nesta projeção.</p><div id="projection-chart" class="chart" role="img" aria-label="Projeção de cobranças a vencer por mês"></div>
+<dl class="metrics">{% for point in projections %}<div><dt>{{ point.label }}</dt><dd>R$ {{ point.expected|floatformat:2 }}</dd></div>{% endfor %}</dl></article>
+<article class="management-card"><h2 class="workspace-label">Receita líquida por origem</h2><dl class="metrics">{% for item in categories %}<div><dt>{{ item.label }}</dt><dd>R$ {{ item.value|floatformat:"2g" }}</dd></div>{% endfor %}</dl></article>
+<article class="management-card"><h2 class="workspace-label">Dados mensais dos gráficos</h2><div class="table-scroll"><table><thead><tr><th>Mês</th><th>Recebido</th><th>Estornos</th><th>Baixas como perda</th><th>Novas empresas</th></tr></thead><tbody>
+{% for point in series %}<tr><td>{{ point.label }}</td><td>R$ {{ point.received|floatformat:2 }}</td><td>R$ {{ point.refunded|floatformat:2 }}</td><td>R$ {{ point.lost|floatformat:2 }}</td><td>{{ point.companies }}</td></tr>{% endfor %}</tbody></table></div></article>
+<article class="management-card"><div class="workspace-heading"><h2 class="workspace-label">Cobranças de todas as empresas</h2><a class="button secondary" href="{% url 'management_export' %}">Exportar CSV</a></div>
+{% include "management/invoices.html" %}
+{% include "management/pagination.html" with page=invoices %}
+</article>
+<article class="management-card"><h2 class="workspace-label">Últimas alterações</h2><ul class="records">{% for event in events %}<li>{{ event.created_at|date:"d/m/Y H:i" }} · {{ event.actor }} · {{ event.store|default:"Plataforma" }}<br>{{ event.description }}</li>{% empty %}<li>Nenhuma alteração registrada.</li>{% endfor %}</ul></article>
+{{ series|json_script:"finance-series" }}
+{{ projections|json_script:"projection-series" }}
+<script src="{% static 'management-charts.js' %}" defer></script>
+{% endblock %}

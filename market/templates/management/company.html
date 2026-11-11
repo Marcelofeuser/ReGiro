@@ -1,0 +1,15 @@
+{% extends "management/base.html" %}
+{% block heading %}{{ store.name }}{% endblock %}
+{% block management_content %}
+<div class="company-context"><strong>EDITANDO EMPRESA Nº {{ store.pk }} · {{ store.name }}</strong><br>CNPJ {{ store.cnpj }} · Usuário {{ store.user.username }} · {{ store.legal_name }}<br>
+{{ store.address }} · {{ store.phone }} · {{ store.email }} · Responsável {{ store.contact }}</div>
+{% if blocked %}<p class="info-note">Novas operações bloqueadas por inadimplência. O acesso ao financeiro e às negociações existentes permanece disponível.</p>{% endif %}
+<div class="deal-layout">
+<article><h2 class="workspace-label">Verificação e acesso</h2><form method="post">{% csrf_token %}{{ form.as_p }}<button name="action" value="company">Salvar acesso da empresa</button></form><p>Suspender impede o acesso operacional da empresa.</p></article>
+<article><h2 class="workspace-label">White label da empresa</h2><form method="post" enctype="multipart/form-data">{% csrf_token %}{{ brand_form.as_p }}<button name="action" value="brand">Salvar identidade</button></form><p>Personaliza nome, logotipo e cor principal nas telas autenticadas da loja.</p></article>
+</div>
+<article class="management-card"><h2 class="workspace-label">Cadastrar cobrança para {{ store.name }}</h2>
+<p>Registre a mensalidade ou ajuste devido. O vencimento gera acompanhamento de inadimplência. Uma referência identifica cada parcela.</p>
+<form method="post" class="management-form">{% csrf_token %}{{ invoice_form.as_p }}<button name="action" value="invoice">Registrar cobrança</button></form></article>
+<article class="management-card"><h2 class="workspace-label">Últimas 50 cobranças desta empresa</h2>{% include "management/invoices.html" %}</article>
+{% endblock %}

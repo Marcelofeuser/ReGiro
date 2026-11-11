@@ -3,9 +3,13 @@
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{% block title %}Peças automotivas entre lojas{% endblock %} | ReGiro</title>
 <link rel="stylesheet" href="{% static 'style.css' %}"></head>
-<body><a class="skip-link" href="#conteudo">Pular para o conteúdo</a><header><a href="{% url 'catalog' %}"><img src="{% static 'regiro.png' %}" alt="ReGiro — Peça parada vira oportunidade"></a>
+<body{% if company_brand %} style="--accent: {{ company_brand.color }}"{% endif %}><a class="skip-link" href="#conteudo">Pular para o conteúdo</a><header>
+{% if company_brand %}<a class="company-brand" href="{% url 'dashboard' %}">
+{% if company_brand.has_logo %}<img src="{% url 'brand_logo' company_brand.store_id %}" alt="{{ company_brand.display_name }}">{% endif %}
+<strong>{{ company_brand.display_name }}</strong><small>no ReGiro</small></a>
+{% else %}<a href="{% url 'catalog' %}"><img src="{% static 'regiro.png' %}" alt="ReGiro — Peça parada vira oportunidade"></a>{% endif %}
 <nav aria-label="Menu principal"><a href="{% url 'catalog' %}">Catálogo</a><a href="{% url 'vip' %}">Clube VIP</a>
-{% if user.is_staff %}<a href="{% url 'admin:index' %}">Administração</a>{% endif %}
+{% if user.is_superuser %}<a href="{% url 'admin:index' %}">Administração</a>{% endif %}
 {% if user.is_authenticated %}{% if user.store %}<a href="{% url 'dashboard' %}">Minha loja</a>{% endif %}
 <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="secondary">Sair</button></form>
 {% else %}<a href="{% url 'login' %}">Entrar</a><a class="button" href="{% url 'register' %}">Cadastrar loja</a>{% endif %}</nav></header>

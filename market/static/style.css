@@ -203,3 +203,25 @@ dd { margin: 0 0 .75rem; }
 
 .catalog-photo { display: block; width: calc(100% + 2.5rem); height: auto; aspect-ratio: 5 / 3; object-fit: cover; margin: -1.25rem -1.25rem 1.25rem; background: #e4efed; }
 .listing-photo { display: block; width: 100%; max-height: 420px; object-fit: contain; border-radius: .75rem; background: #edf5f3; }
+
+.management-title { font-size: clamp(1.9rem, 4vw, 3.2rem); }
+.management-nav { margin: 1.2rem 0; }
+.management-card { margin-block: 1rem; }
+.company-context { background: #e1f3ec; border: 1px solid #94bfb0; border-radius: .75rem; padding: 1rem; margin-block: 1rem; overflow-wrap: anywhere; }
+.table-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+th, td { padding: .85rem .65rem; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { color: #425a67; background: #f0f6f4; }
+td a { color: var(--accent); font-weight: 650; }
+.management-form { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 1rem; align-items: end; }
+.management-form p { display: grid; margin: 0; gap: .35rem; }
+.management-card input[type=checkbox], .deal-layout input[type=checkbox] { width: auto; }
+.financial-metrics dd { font-size: clamp(1.05rem, 2vw, 1.55rem); }
+.financial-metrics { grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); }
+.chart svg { width: 100%; display: block; min-width: 380px; }
+.chart { overflow-x: auto; }
+.chart-legend { display: flex; gap: 1rem; flex-wrap: wrap; font-size: .85rem; }
+.chart-legend i { display: inline-block; width: .6rem; height: .6rem; border-radius: 50%; margin-right: .4rem; }
+.company-brand { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+.company-brand img { max-height: 65px; width: auto; max-width: 140px; object-fit: contain; }
+.company-brand small { color: var(--muted); letter-spacing: normal; }

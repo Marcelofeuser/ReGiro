@@ -1,3 +1,4 @@
+from datetime import timedelta
 from decimal import Decimal
 from io import BytesIO
 
@@ -5,10 +6,11 @@ from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from PIL import Image
 
-from .models import Deal, Listing, ListingPhoto, Store
+from .models import CompanyBrand, Deal, Invoice, Listing, ListingPhoto, ManagementEvent, PlatformConfig, Store
 
 
 class MarketplaceFlowTests(TestCase):
@@ -70,6 +72,7 @@ class MarketplaceFlowTests(TestCase):
         target.refresh_from_db()
         offered.refresh_from_db()
         self.assertEqual(deal.status, Deal.Status.COMPLETE)
+        self.assertEqual(Invoice.objects.get(deal=deal).amount, deal.fee)
         self.assertEqual(target.status, Listing.Status.SWAPPED)
         self.assertEqual(offered.status, Listing.Status.SWAPPED)
         self.assertEqual(self.client.post(url, {"action": "received"}).status_code, 403)
@@ -163,3 +166,93 @@ class MarketplaceFlowTests(TestCase):
         self.assertEqual(self.client.get(photo_url).status_code, 404)
         self.client.force_login(owner.user)
         self.assertEqual(self.client.get(photo_url).status_code, 200)
+
+
+class PlatformManagementTests(TestCase):
+    def setUp(self):
+        self.admin = get_user_model().objects.create_superuser("gestor", "gestor@example.com", "test-pass")
+        self.user = get_user_model().objects.create_user("empresa", password="company-pass")
+        self.store = Store.objects.create(
+            user=self.user, legal_name="Empresa Ltda", name="Empresa",
+            cnpj="04252011000110", address="Rua Um", phone="11999999999",
+            email="empresa@example.com", contact="Responsável", verified=True,
+        )
+        self.invoice = Invoice.objects.create(
+            store=self.store, kind=Invoice.Kind.VIP, reference="vip-teste", amount=50,
+            due_date=timezone.localdate() - timedelta(days=10),
+            period_start=timezone.localdate() - timedelta(days=1),
+            period_end=timezone.localdate() + timedelta(days=29),
+        )
+
+    def test_global_admin_authorization_and_company_isolation(self):
+        self.client.force_login(self.user)
+        for name in ("management", "management_companies", "management_users",
+                     "management_export", "management_settings"):
+            self.assertEqual(self.client.get(reverse(name)).status_code, 403)
+        self.assertEqual(self.client.get(reverse("management_company", args=[self.store.pk])).status_code, 403)
+        self.assertContains(self.client.get(reverse("company_finance")), "vip-teste")
+        other_user = get_user_model().objects.create_user("outra")
+        Store.objects.create(user=other_user, name="Outra", legal_name="Outra", cnpj="12345678912345")
+        self.client.force_login(other_user)
+        self.assertNotContains(self.client.get(reverse("company_finance")), "vip-teste")
+        self.client.force_login(self.admin)
+        for name in ("management", "management_companies", "management_users", "management_settings"):
+            self.assertEqual(self.client.get(reverse(name)).status_code, 200)
+        self.assertContains(self.client.get(reverse("management_company", args=[self.store.pk])), "Empresa Ltda")
+
+    def test_receipt_refund_and_repeated_requests_preserve_totals(self):
+        self.client.force_login(self.admin)
+        url = reverse("management_invoice", args=[self.invoice.pk])
+        self.client.post(url, {"action": "pay"})
+        self.client.post(url, {"action": "pay"})
+        self.assertEqual(ManagementEvent.objects.count(), 1)
+        overview = self.client.get(reverse("management"))
+        self.assertEqual(overview.context["net"], Decimal("50"))
+        self.assertEqual(overview.context["vip_count"], 1)
+        self.client.post(url, {"action": "refund"})
+        self.client.post(url, {"action": "refund"})
+        overview = self.client.get(reverse("management"))
+        self.assertEqual(overview.context["net"], Decimal("0"))
+        self.assertEqual(overview.context["refunds"], Decimal("50"))
+        self.assertEqual(overview.context["vip_count"], 0)
+        self.assertEqual(ManagementEvent.objects.count(), 2)
+
+    def test_financial_block_releases_after_receipt(self):
+        PlatformConfig.objects.create(pk=1, auto_block=True, grace_days=5)
+        self.client.force_login(self.user)
+        self.assertEqual(self.client.get(reverse("publish")).status_code, 403)
+        self.assertEqual(self.client.get(reverse("dashboard")).status_code, 200)
+        self.assertContains(self.client.get(reverse("company_finance")), "bloqueadas")
+        self.client.force_login(self.admin)
+        self.client.post(reverse("management_invoice", args=[self.invoice.pk]), {"action": "pay"})
+        self.client.force_login(self.user)
+        self.assertEqual(self.client.get(reverse("publish")).status_code, 200)
+
+    def test_white_label_and_configuration_validation(self):
+        self.client.force_login(self.admin)
+        company_url = reverse("management_company", args=[self.store.pk])
+        self.client.post(company_url, {
+            "action": "brand", "enabled": "on", "display_name": "Marca da Loja", "color": "#274faf",
+        })
+        self.assertTrue(CompanyBrand.objects.get(store=self.store).enabled)
+        self.client.force_login(self.user)
+        self.assertContains(self.client.get(reverse("dashboard")), "Marca da Loja")
+        self.client.force_login(self.admin)
+        self.assertNotContains(self.client.get(reverse("management")), "Marca da Loja")
+        self.client.post(company_url, {
+            "action": "brand", "enabled": "on", "display_name": "Bad", "color": "bad",
+        })
+        self.assertEqual(CompanyBrand.objects.get(store=self.store).color, "#274faf")
+
+    def test_projection_writeoff_and_csv_formula_escaping(self):
+        future = Invoice.objects.create(
+            store=self.store, kind=Invoice.Kind.MONTHLY, reference="=sensitive", amount=100,
+            due_date=timezone.localdate() + timedelta(days=15),
+        )
+        self.client.force_login(self.admin)
+        overview = self.client.get(reverse("management"))
+        self.assertEqual(overview.context["projection"], Decimal("100"))
+        self.assertEqual(overview.context["overdue"], Decimal("50"))
+        self.client.post(reverse("management_invoice", args=[self.invoice.pk]), {"action": "writeoff"})
+        self.assertEqual(self.client.get(reverse("management")).context["losses"], Decimal("50"))
+        self.assertContains(self.client.get(reverse("management_export")), "'=sensitive")

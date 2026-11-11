@@ -1,0 +1,8 @@
+{% extends "management/base.html" %}
+{% block heading %}Configurações da plataforma{% endblock %}
+{% block management_content %}
+<article class="panel management-card"><h2 class="workspace-label">Tarifas e inadimplência</h2>
+<p>Ativar o bloqueio aplica a política a todas as empresas com cobranças vencidas além da tolerância. A regularização dos lançamentos libera novas operações automaticamente.</p>
+<form method="post">{% csrf_token %}{{ rate_form.as_p }}{{ form.as_p }}<button>Salvar configurações</button></form>
+<p>O preço VIP é uma sugestão para o cadastro de novas mensalidades. Cada parcela exige registro explícito. Renovação e cobrança automática dependem da integração com o provedor.</p>
+</article>{% endblock %}

@@ -64,3 +64,15 @@ O teste cobre cadastro, aprovação, busca, proposta, restrição de acesso, con
 - Infraestrutura de produção com HTTPS, banco gerenciado, backup e configuração de segredos. Defina `REGIRO_SECRET_KEY` e `REGIRO_HOSTS` em ambiente seguro. Use `REGIRO_DEBUG=1` somente em desenvolvimento.
 
 O repositório contém apenas código e ativos do aplicativo. Não há publicação ou ativação de cobranças.
+
+## Administração e financeiro
+
+O endereço `/admin/` abre o painel global, exclusivo de superusuários. O painel mostra todas as empresas e seus usuários, permite aprovar ou suspender cada cadastro e aplicar uma identidade visual por loja (nome, logotipo e cor principal nas telas autenticadas). Em `/gestao/empresas/`, escolha a empresa antes de alterar acesso, identidade ou cobranças.
+
+As parcelas têm referência única e vencimento. Registre manualmente recebimento, cancelamento, estorno integral ou baixa como perda para parcelas vencidas. As transições ficam no histórico com autor e data e são protegidas contra repetição. A referência com prefixo `negociacao-` é reservada ao sistema. Novas negociações concluídas geram um lançamento em aberto da comissão ou tarifa atribuída à empresa responsável. Negociações antigas não são faturadas retroativamente pela migração.
+
+Os indicadores e gráficos mostram recebimentos, estornos e baixas como perda, evolução dos cadastros, períodos VIP pagos vigentes e projeção de três meses a partir de parcelas já cadastradas. A comparação percentual usa o mês atual até hoje e o mês anterior completo. Receita líquida registrada significa recebimentos menos estornos. Despesas operacionais, impostos, tarifas de provedor e conciliação bancária ainda não compõem esse indicador. A exportação CSV inclui os lançamentos de todas as empresas.
+
+A política de bloqueio por inadimplência começa desativada. Em Configurações, o administrador pode ativá-la e definir a tolerância. O bloqueio financeiro impede novos anúncios, edição de peças e novas propostas ou aceites. O acesso ao financeiro e às negociações existentes permanece disponível para regularização, mensagens e confirmações. Receber, cancelar ou baixar os lançamentos pendentes pode remover o bloqueio. Suspensão administrativa tem efeito próprio e precisa ser removida manualmente.
+
+O white label atual personaliza as telas autenticadas da loja. Domínio próprio, instância separada e uma vitrine pública exclusiva por empresa exigem implementação adicional. Os registros financeiros ainda são manuais. Cobrança recorrente automática e conciliação por notificações do provedor dependem da integração de pagamentos.

@@ -1,0 +1,6 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ title }} | Administração global ReGiro{% endblock %}
+{% block branding %}
+<h1 id="site-name"><a href="{% url 'management' %}">Administração global ReGiro</a></h1>
+{% endblock %}
+{% block nav-global %}<a href="{% url 'management' %}">Financeiro e desempenho</a> · <a href="{% url 'management_companies' %}">Empresas</a> · <a href="{% url 'management_users' %}">Usuários</a>{% endblock %}

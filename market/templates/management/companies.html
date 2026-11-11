@@ -1,0 +1,11 @@
+{% extends "management/base.html" %}
+{% block heading %}Empresas cadastradas{% endblock %}
+{% block management_content %}
+<form class="filters"><label>Empresa, CNPJ ou usuário<input name="q" value="{{ q }}"></label><button>Buscar</button></form>
+<article class="management-card"><div class="table-scroll"><table><thead><tr><th>Empresa</th><th>CNPJ</th><th>Usuário</th><th>Cadastro</th><th>Acesso</th><th></th></tr></thead><tbody>
+{% for store in page %}<tr><td>{{ store.name }}</td><td>{{ store.cnpj }}</td><td>{{ store.user }}</td><td>{{ store.verified|yesno:"Verificada,Aguardando" }}</td>
+<td>{% if store.suspended %}Suspensa{% elif store.financial_blocked %}Bloqueada por inadimplência{% else %}Ativa{% endif %}</td>
+<td><a class="button secondary" href="{% url 'management_company' store.pk %}">Gerenciar empresa</a></td></tr>
+{% empty %}<tr><td colspan="6">Nenhuma empresa encontrada.</td></tr>{% endfor %}</tbody></table></div>
+{% include "management/pagination.html" %}</article>
+{% endblock %}

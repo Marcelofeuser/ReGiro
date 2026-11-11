@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Financeiro da empresa{% endblock %}
+{% block content %}<section><a class="back-link" href="{% url 'dashboard' %}">← Minha loja</a>
+<div class="internal-banner"><small>FINANCEIRO DA EMPRESA</small><h2>{{ store.name }}</h2>
+<p>{% if blocked %}Novas operações bloqueadas por inadimplência{% else %}Sem bloqueio financeiro{% endif %}</p>
+<p>VIP · {% if vip_active %}período pago vigente{% else %}sem período pago vigente{% endif %}</p></div>
+<article class="management-card"><div class="table-scroll"><table><thead><tr><th>Referência</th><th>Tipo</th><th>Valor</th><th>Vencimento</th><th>Situação</th></tr></thead><tbody>
+{% for invoice in invoices %}<tr><td>{{ invoice.reference }}</td><td>{{ invoice.get_kind_display }}</td><td>R$ {{ invoice.amount|floatformat:"2g" }}</td><td>{{ invoice.due_date|date:"d/m/Y" }}</td><td>{% if invoice.overdue %}Vencida{% else %}{{ invoice.get_status_display }}{% endif %}</td></tr>{% empty %}<tr><td colspan="5">Nenhuma cobrança registrada.</td></tr>{% endfor %}
+</tbody></table></div>{% include "management/pagination.html" with page=invoices %}</article>
+</section>{% endblock %}

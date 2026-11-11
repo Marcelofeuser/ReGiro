@@ -1,0 +1,10 @@
+<div class="table-scroll"><table>
+<thead><tr><th>Empresa</th><th>Referência</th><th>Tipo</th><th>Valor</th><th>Vencimento</th><th>Situação</th>{% if store %}<th>Registro manual</th>{% endif %}</tr></thead>
+<tbody>{% for invoice in invoices %}<tr>
+<td><a href="{% url 'management_company' invoice.store_id %}">{{ invoice.store }}</a></td><td>{{ invoice.reference }}</td><td>{{ invoice.get_kind_display }}</td>
+<td>R$ {{ invoice.amount|floatformat:"2g" }}</td><td>{{ invoice.due_date|date:"d/m/Y" }}</td><td><span class="tag {% if invoice.overdue %}status-disputed{% endif %}">{% if invoice.overdue %}Vencida{% else %}{{ invoice.get_status_display }}{% endif %}</span></td>
+{% if store %}<td><form class="record-actions" method="post" action="{% url 'management_invoice' invoice.pk %}">{% csrf_token %}
+{% if invoice.status == "open" %}<button name="action" value="pay">Registrar recebimento</button><button class="secondary" name="action" value="cancel">Cancelar lançamento</button>{% if invoice.overdue %}<button class="secondary" name="action" value="writeoff">Baixar como perda</button>{% endif %}
+{% elif invoice.status == "paid" %}<button class="secondary" name="action" value="refund">Registrar estorno integral</button>{% endif %}
+</form></td>{% endif %}
+</tr>{% empty %}<tr><td colspan="7">Nenhuma cobrança registrada.</td></tr>{% endfor %}</tbody></table></div>

@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from django.conf import settings
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
 from django.db import models
 
 
@@ -115,3 +115,66 @@ class Favorite(models.Model):
 class ListingPhoto(models.Model):
     listing = models.OneToOneField(Listing, on_delete=models.CASCADE, related_name="photo")
     content = models.BinaryField(editable=False)
+
+
+class PlatformConfig(models.Model):
+    auto_block = models.BooleanField("Bloquear novas operações por inadimplência", default=False)
+    grace_days = models.PositiveIntegerField("Dias de tolerância", default=5)
+    fee_due_days = models.PositiveIntegerField("Prazo para comissões e tarifas (dias)", default=7)
+    vip_price = models.DecimalField("Mensalidade VIP sugerida (R$)", max_digits=10, decimal_places=2,
+                                    default=0, validators=[MinValueValidator(0)])
+
+    def __str__(self):
+        return "Configurações ReGiro"
+
+
+class CompanyBrand(models.Model):
+    store = models.OneToOneField(Store, on_delete=models.CASCADE, related_name="brand")
+    enabled = models.BooleanField("Ativar identidade da empresa", default=False)
+    display_name = models.CharField("Nome da marca", max_length=100, blank=True)
+    color = models.CharField("Cor principal", max_length=7, default="#006b50",
+                            validators=[RegexValidator(
+                                r"^#[0-9a-fA-F]{6}$", "Informe uma cor hexadecimal, como #006b50.")])
+    logo = models.BinaryField(editable=False, null=True, blank=True)
+
+
+class Invoice(models.Model):
+    class Kind(models.TextChoices):
+        VIP = "vip", "Mensalidade VIP"
+        MONTHLY = "monthly", "Mensalidade da empresa"
+        COMMISSION = "commission", "Comissão de venda"
+        SWAP = "swap", "Tarifa de troca"
+
+    class Status(models.TextChoices):
+        OPEN = "open", "Em aberto"
+        PAID = "paid", "Recebida"
+        CANCELLED = "cancelled", "Cancelada"
+        REFUNDED = "refunded", "Estornada"
+        LOST = "lost", "Baixada como perda"
+
+    store = models.ForeignKey(Store, on_delete=models.PROTECT, related_name="invoices")
+    kind = models.CharField("Tipo", max_length=12, choices=Kind)
+    reference = models.CharField("Referência única", max_length=120, unique=True)
+    amount = models.DecimalField("Valor (R$)", max_digits=12, decimal_places=2,
+                                 validators=[MinValueValidator(Decimal("0.01"))])
+    due_date = models.DateField("Vencimento")
+    period_start = models.DateField("Início do período VIP", null=True, blank=True)
+    period_end = models.DateField("Fim do período VIP (inclusive)", null=True, blank=True)
+    status = models.CharField(max_length=10, choices=Status, default=Status.OPEN)
+    paid_at = models.DateTimeField(null=True, blank=True)
+    refunded_at = models.DateTimeField(null=True, blank=True)
+    lost_at = models.DateTimeField(null=True, blank=True)
+    deal = models.OneToOneField(Deal, on_delete=models.PROTECT, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def overdue(self):
+        from django.utils import timezone
+        return self.status == self.Status.OPEN and self.due_date < timezone.localdate()
+
+
+class ManagementEvent(models.Model):
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    store = models.ForeignKey(Store, on_delete=models.PROTECT, null=True, blank=True)
+    description = models.CharField(max_length=500)
+    created_at = models.DateTimeField(auto_now_add=True)

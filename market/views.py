@@ -13,7 +13,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from .forms import CatalogFilters, ListingForm, ProposalForm, StoreForm, TextForm
-from .models import Deal, Favorite, Listing, ListingPhoto, Message, Rates, Report, Store
+from .finance import active_vip, blocked, config
+from .models import CompanyBrand, Invoice, Deal, Favorite, Listing, ListingPhoto, Message, Rates, Report, Store
 
 
 def rates():
@@ -105,6 +106,7 @@ def store_profile(request):
 @login_required
 def manage_listing(request, pk):
     store = current_store(request, verified=True)
+    check_commerce(store)
     with transaction.atomic():
         item = get_object_or_404(store.listings.select_for_update(), pk=pk)
         if item.status != Listing.Status.ACTIVE:
@@ -136,6 +138,7 @@ def save_photo(item, form):
 @transaction.atomic
 def publish(request):
     store = current_store(request, verified=True)
+    check_commerce(store)
     form = ListingForm(request.POST, request.FILES) if request.method == "POST" else ListingForm()
     if form.is_valid():
         listing = form.save(commit=False)
@@ -198,8 +201,10 @@ def report(request, pk):
 @transaction.atomic
 def propose(request, pk):
     buyer = current_store(request, verified=True)
+    check_commerce(buyer)
     target = get_object_or_404(Listing, pk=pk, status=Listing.Status.ACTIVE,
                                store__verified=True, store__suspended=False)
+    check_commerce(target.store)
     if target.store_id == buyer.pk:
         raise PermissionDenied
     form = ProposalForm(request.POST if request.method == "POST" else None, store=buyer, target=target)
@@ -247,6 +252,8 @@ def deal_detail(request, pk):
         action = request.POST.get("action")
         items = Listing.objects.filter(pk__in=[deal.target_id, deal.offered_id])
         if action == "accept" and seller and proposed:
+            check_commerce(deal.buyer)
+            check_commerce(deal.seller)
             available = items.filter(status=Listing.Status.ACTIVE, store__verified=True, store__suspended=False)
             # Lock both lots in a consistent order before checking availability.
             available_ids = list(available.order_by("pk").select_for_update(of=("self",))
@@ -268,6 +275,15 @@ def deal_detail(request, pk):
             if deal.seller_received and deal.buyer_received:
                 items.update(status=Listing.Status.SWAPPED if deal.offered_id else Listing.Status.SOLD)
                 deal.status = Deal.Status.COMPLETE
+                if deal.fee > 0:
+                    from datetime import timedelta
+                    from django.utils import timezone
+                    Invoice.objects.get_or_create(deal=deal, defaults={
+                        "store": deal.buyer if deal.offered_id else deal.seller,
+                        "kind": Invoice.Kind.SWAP if deal.offered_id else Invoice.Kind.COMMISSION,
+                        "reference": f"negociacao-{deal.pk}", "amount": deal.fee,
+                        "due_date": timezone.localdate() + timedelta(days=config().fee_due_days),
+                    })
         elif action == "message" and (proposed or accepted or deal.status == Deal.Status.DISPUTED):
             form = TextForm(request.POST)
             if form.is_valid():
@@ -285,3 +301,24 @@ def deal_detail(request, pk):
 
 def vip(request):
     return render(request, "vip.html", {"rates": rates()})
+
+
+def check_commerce(store):
+    if store.suspended or not store.verified or blocked(store):
+        raise PermissionDenied("Loja sem permissão para novas operações. Consulte o financeiro da empresa.")
+
+
+def brand_logo(request, pk):
+    brand = get_object_or_404(CompanyBrand.objects.exclude(logo=None), store_id=pk, enabled=True)
+    return HttpResponse(bytes(brand.logo), content_type="image/jpeg",
+                        headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"})
+
+
+@login_required
+def company_finance(request):
+    store = current_store(request)
+    return render(request, "company_finance.html", {
+        "store": store, "blocked": blocked(store),
+        "vip_active": active_vip().filter(store=store).exists(),
+        "invoices": Paginator(store.invoices.order_by("-pk"), 25).get_page(request.GET.get("page")),
+    })

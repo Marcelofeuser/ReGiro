@@ -12,6 +12,7 @@
     </div>
     <div class="record-actions">
       <a class="button hero-outline" href="{% url 'store_profile' %}">Dados da empresa</a>
+      <a class="button hero-outline" href="{% url 'company_finance' %}">Financeiro e VIP</a>
       {% if store.verified %}<a class="button" href="{% url 'publish' %}">+ Anunciar peça</a>{% endif %}
     </div>
   </div>

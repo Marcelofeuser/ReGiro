@@ -1,0 +1,10 @@
+{% extends "management/base.html" %}
+{% block heading %}Usuários cadastrados{% endblock %}
+{% block management_content %}
+<form class="filters"><label>Usuário, e-mail ou empresa<input name="q" value="{{ q }}"></label><button>Buscar</button></form>
+<article class="management-card"><div class="table-scroll"><table><thead><tr><th>Usuário</th><th>E-mail</th><th>Empresa</th><th>Perfil</th><th>Ativo</th><th>Cadastro</th></tr></thead><tbody>
+{% for account in page %}<tr><td>{{ account.username }}</td><td>{% if account.email %}{{ account.email }}{% elif account.store %}{{ account.store.email }}{% else %}—{% endif %}</td><td>{% if account.store %}<a href="{% url 'management_company' account.store.pk %}">{{ account.store.name }}</a>{% else %}Sem empresa vinculada{% endif %}</td>
+<td>{% if account.is_superuser %}Administrador global{% elif account.is_staff %}Equipe administrativa{% else %}Usuário de loja{% endif %}</td><td>{{ account.is_active|yesno:"Sim,Não" }}</td><td>{{ account.date_joined|date:"d/m/Y" }}</td></tr>
+{% empty %}<tr><td colspan="6">Nenhum usuário encontrado.</td></tr>{% endfor %}</tbody></table></div>
+{% include "management/pagination.html" %}</article>
+{% endblock %}
