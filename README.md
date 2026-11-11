@@ -17,6 +17,10 @@ Marketplace responsivo em português brasileiro para lojas de autopeças vendere
 - Simulação de pagamentos apenas em modo de teste com transparência de custos.
 - Histórico de negociações com confirmação de ambas as lojas para conclusão.
 
+## Limitações desta versão
+
+Este branch contém um protótipo de interface executado no navegador. Os dados ficam apenas na memória da página e são apagados ao recarregar. Ainda não há autenticação, banco de dados, envio real de e-mail ou SMS, moderação protegida, cobrança de taxa/comissão nem assinatura recorrente. O painel administrativo e os valores de pagamento são demonstrativos. Não use informações reais de lojas nesta versão.
+
 ## Executar localmente
 
 Abra o arquivo `index.html` no navegador.
