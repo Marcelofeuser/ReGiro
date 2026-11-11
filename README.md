@@ -21,6 +21,15 @@ Marketplace responsivo em português brasileiro para lojas de autopeças vendere
 
 Este branch contém um protótipo de interface executado no navegador. Os dados ficam apenas na memória da página e são apagados ao recarregar. Ainda não há autenticação, banco de dados, envio real de e-mail ou SMS, moderação protegida, cobrança de taxa/comissão nem assinatura recorrente. O painel administrativo e os valores de pagamento são demonstrativos. Não use informações reais de lojas nesta versão.
 
+## Arquitetura escolhida para a próxima etapa
+
+- **GitHub:** repositório do código, histórico, revisão e integração com a Railway.
+- **Railway:** hospedagem da aplicação e da API, banco PostgreSQL e Bucket S3-compatível para fotos dos anúncios.
+- **Autenticação:** será implementada na aplicação/API, com senhas protegidas, sessões seguras e autorização por loja.
+- **Pagamentos:** integração posterior com um provedor de pagamentos; não será simulada como cobrança real.
+
+A Railway permite conectar um repositório GitHub e fazer novos deploys quando houver commits na branch configurada. O PostgreSQL e os Buckets serão serviços separados dentro do mesmo projeto Railway. Backups do banco precisam ser ativados e acompanhados na configuração da Railway.
+
 ## Executar localmente
 
 Abra o arquivo `index.html` no navegador.
