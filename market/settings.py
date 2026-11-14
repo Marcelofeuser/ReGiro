@@ -8,7 +8,15 @@ DEBUG = os.getenv("REGIRO_DEBUG") == "1"
 SECRET_KEY = os.getenv("REGIRO_SECRET_KEY") or ("local-development-only" if DEBUG else "")
 if not SECRET_KEY:
     raise RuntimeError("Configure REGIRO_SECRET_KEY ou use REGIRO_DEBUG=1 localmente.")
-ALLOWED_HOSTS = os.getenv("REGIRO_HOSTS", "localhost,127.0.0.1").split(",")
+allowed_hosts = os.getenv("REGIRO_HOSTS", "localhost,127.0.0.1").split(",")
+railway_domain = os.getenv("RAILWAY_PUBLIC_DOMAIN")
+if railway_domain:
+    allowed_hosts.append(railway_domain)
+ALLOWED_HOSTS = [host.strip() for host in allowed_hosts if host.strip()]
+csrf_origins = os.getenv("REGIRO_CSRF_TRUSTED_ORIGINS", "").split(",")
+if railway_domain:
+    csrf_origins.append(f"https://{railway_domain}")
+CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_origins if origin.strip()]
 INSTALLED_APPS = [
     "django.contrib.admin", "django.contrib.auth", "django.contrib.contenttypes",
     "django.contrib.sessions", "django.contrib.messages", "django.contrib.staticfiles",
@@ -16,6 +24,7 @@ INSTALLED_APPS = [
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -39,6 +48,7 @@ if database_url:
     database = dj_database_url.parse(database_url, conn_health_checks=True)
     if database["ENGINE"] != "django.db.backends.postgresql":
         raise RuntimeError("DATABASE_URL deve apontar para um banco PostgreSQL.")
+    database.setdefault("OPTIONS", {})
     database["OPTIONS"].setdefault("sslmode", "require")
     database["DISABLE_SERVER_SIDE_CURSORS"] = True
 elif DEBUG:
@@ -60,9 +70,14 @@ TIME_ZONE = "America/Sao_Paulo"
 USE_TZ = True
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
+}
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "dashboard"
 LOGOUT_REDIRECT_URL = "catalog"
 SESSION_COOKIE_SECURE = CSRF_COOKIE_SECURE = not DEBUG
 SECURE_SSL_REDIRECT = not DEBUG
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

@@ -4,7 +4,7 @@
 
 Peça parada vira oportunidade.
 
-Aplicativo responsivo em português brasileiro com o logotipo ReGiro. O catálogo é público. Lojas aprovadas pelo administrador podem anunciar e negociar. Os dados são persistidos no servidor com Django e PostgreSQL no Neon, ou SQLite no desenvolvimento local.
+Aplicativo responsivo em português brasileiro com o logotipo ReGiro. O catálogo é público. Lojas aprovadas pelo administrador podem anunciar e negociar. Os dados são persistidos no servidor com Django e PostgreSQL Railway, ou SQLite no desenvolvimento local.
 
 ## Executar localmente
 
@@ -22,20 +22,18 @@ python manage.py runserver
 
 Abra [o catálogo local](http://localhost:8000). Cadastre duas lojas e aprove ambas em [Administração → Lojas](http://localhost:8000/admin/market/store/). O catálogo começa vazio. Cada anúncio representa um lote completo, com preço total e quantidade informada.
 
-## Conectar ao Neon
+## Implantar na Railway
 
-Crie um projeto ReGiro no console do Neon. Em **Connect**, selecione a base e a função do aplicativo e copie a URL PostgreSQL. Guarde a URL como o segredo `DATABASE_URL` no ambiente de execução. Preserve os parâmetros de segurança fornecidos pelo Neon. Para a aplicação, pode usar a URL com pool de conexões. Para as migrações, use a URL direta.
+O projeto usa um serviço web Django e um serviço PostgreSQL dentro do mesmo projeto Railway. O repositório contém um `Procfile` para iniciar Gunicorn, o módulo WSGI e WhiteNoise para servir os arquivos estáticos.
 
-Com a URL direta carregada em `DATABASE_URL`, execute:
+1. Conecte o serviço web ao repositório `Marcelofeuser/ReGiro` e use a branch aprovada para implantação.
+2. Adicione um serviço **PostgreSQL** ao mesmo projeto Railway.
+3. Nas variáveis do serviço web, configure `DATABASE_URL` como referência à variável `DATABASE_URL` do serviço PostgreSQL, além de `REGIRO_SECRET_KEY` com um segredo aleatório forte.
+4. Use o domínio público gerado pela Railway. O Django aceita `RAILWAY_PUBLIC_DOMAIN` automaticamente; configure `REGIRO_HOSTS` e `REGIRO_CSRF_TRUSTED_ORIGINS` apenas para domínios adicionais.
+5. Configure `python manage.py migrate --noinput` como comando de pré-implantação e `python manage.py collectstatic --noinput` como comando de build.
+6. Crie o usuário administrador pelo console do serviço com `python manage.py createsuperuser`. Não coloque senhas no repositório.
 
-```sh
-python manage.py migrate
-python manage.py showmigrations market
-```
-
-Fora do modo local, configure também `REGIRO_SECRET_KEY` e `REGIRO_HOSTS`. As migrações criam o esquema em um banco vazio. Dados existentes no SQLite não são transferidos automaticamente. Execute testes apenas com SQLite local ou um servidor PostgreSQL descartável.
-
-[Guia do Neon para Django](https://neon.com/docs/guides/django)
+Em desenvolvimento, use SQLite com `REGIRO_DEBUG=1`. O banco de produção é PostgreSQL. A criação do esquema exige executar as migrações; dados de SQLite não são transferidos automaticamente. Ative e verifique backups do PostgreSQL antes de operar com dados reais.
 
 ## Fluxo disponível
 
