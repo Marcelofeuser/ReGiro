@@ -48,6 +48,7 @@ if database_url:
     database = dj_database_url.parse(database_url, conn_health_checks=True)
     if database["ENGINE"] != "django.db.backends.postgresql":
         raise RuntimeError("DATABASE_URL deve apontar para um banco PostgreSQL.")
+    database.setdefault("OPTIONS", {})
     database["OPTIONS"].setdefault("sslmode", "require")
     database["DISABLE_SERVER_SIDE_CURSORS"] = True
 elif DEBUG:
